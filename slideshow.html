@@ -16,19 +16,16 @@ body {
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
-  height: 100vh;
-  width: 100vw;
+  height: 100vh; width: 100vw;
   user-select: none;
 }
 
-/* ── Drop zone / landing screen ── */
+/* ── Drop zone ── */
 #dropzone {
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 24px;
-  background: #0a0a0a;
-  z-index: 100;
+  gap: 24px; background: #0a0a0a; z-index: 100;
   transition: background 0.2s;
 }
 #dropzone.drag-over { background: #111820; }
@@ -38,82 +35,98 @@ body {
 
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 24px;
-  border: none; border-radius: 10px;
+  padding: 12px 24px; border: none; border-radius: 10px;
   font-size: 0.95rem; font-weight: 600; cursor: pointer;
   transition: opacity 0.15s, transform 0.1s;
 }
 .btn:active { transform: scale(0.97); }
-.btn-primary { background: #fff; color: #000; }
+.btn-primary   { background: #fff; color: #000; }
 .btn-secondary { background: #1e1e1e; color: #fff; border: 1px solid #333; }
 .btn:hover { opacity: 0.85; }
 .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+#folderInput, #photosInput, #addMoreInput, #addPhotosInput { display: none; }
 
-#folderInput { display: none; }
-
-/* ── Slideshow stage ── */
-#stage {
-  position: fixed; inset: 0;
-  background: #000;
-  display: none;
-}
+/* ── Stage ── */
+#stage { position: fixed; inset: 0; background: #000; display: none; }
 
 .slide {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  transition: none;
+  opacity: 0; transition: none;
 }
 .slide.active { opacity: 1; }
-.slide.fade-in  { animation: fadeIn var(--duration, 0.7s) ease forwards; }
-.slide.fade-out { animation: fadeOut var(--duration, 0.7s) ease forwards; }
-.slide.slide-in-left  { animation: slideInLeft var(--duration, 0.5s) ease forwards; }
-.slide.slide-out-left { animation: slideOutLeft var(--duration, 0.5s) ease forwards; }
+.slide.fade-in        { animation: fadeIn var(--dur,0.7s) ease forwards; }
+.slide.fade-out       { animation: fadeOut var(--dur,0.7s) ease forwards; }
+.slide.slide-in-left  { animation: slideInLeft var(--dur,0.5s) ease forwards; }
+.slide.slide-out-left { animation: slideOutLeft var(--dur,0.5s) ease forwards; }
 
-@keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
-@keyframes fadeOut     { from { opacity: 1 } to { opacity: 0 } }
-@keyframes slideInLeft { from { transform: translateX(100%) } to { transform: translateX(0) } }
-@keyframes slideOutLeft{ from { transform: translateX(0) }     to { transform: translateX(-100%) } }
+@keyframes fadeIn       { from{opacity:0} to{opacity:1} }
+@keyframes fadeOut      { from{opacity:1} to{opacity:0} }
+@keyframes slideInLeft  { from{transform:translateX(100%)} to{transform:translateX(0)} }
+@keyframes slideOutLeft { from{transform:translateX(0)} to{transform:translateX(-100%)} }
 
 .slide img {
-  max-width: 100%; max-height: 100%;
-  width: 100%; height: 100%;
-  object-fit: contain;
-  display: block;
+  max-width:100%; max-height:100%;
+  width:100%; height:100%;
+  object-fit:contain; display:block;
 }
 
 /* ── Progress bar ── */
 #progress-bar {
-  position: fixed; top: 0; left: 0;
-  height: 3px; background: rgba(255,255,255,0.85);
-  width: 0%; z-index: 50;
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: rgba(255,255,255,0.85); width: 0%; z-index: 50;
   transition: width 0.3s linear;
   box-shadow: 0 0 6px rgba(255,255,255,0.5);
 }
 
 /* ── Image info ── */
 #img-info {
-  position: fixed; bottom: 80px; left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 8px; padding: 6px 14px;
+  position: fixed; bottom: 172px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); border-radius: 8px; padding: 6px 14px;
   font-size: 0.78rem; color: rgba(255,255,255,0.7);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 80vw; text-align: center;
-  pointer-events: none;
-  z-index: 40;
+  max-width: 80vw; text-align: center; pointer-events: none; z-index: 40;
+  transition: opacity 0.4s;
 }
+#img-info.hidden { opacity: 0; }
 
-/* ── Controls overlay ── */
+/* ── Filmstrip ── */
+#filmstrip-wrap {
+  position: fixed; bottom: 100px; left: 0; right: 0;
+  height: 72px; z-index: 48;
+  transition: opacity 0.4s, transform 0.4s;
+  overflow: hidden;
+}
+#filmstrip-wrap.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
+#filmstrip {
+  display: flex; align-items: center; gap: 6px;
+  height: 100%; padding: 0 16px;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#filmstrip::-webkit-scrollbar { display: none; }
+.thumb {
+  flex-shrink: 0; width: 60px; height: 60px;
+  border-radius: 6px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
+  opacity: 0.55;
+  background: #111;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb.active { border-color: #fff; opacity: 1; transform: scale(1.1); }
+.thumb:hover { opacity: 0.85; }
+
+/* ── Controls ── */
 #controls {
   position: fixed; bottom: 0; left: 0; right: 0;
-  padding: 16px 20px 24px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.75));
-  display: flex; flex-direction: column; gap: 12px;
-  z-index: 50;
-  transition: opacity 0.4s ease;
+  padding: 8px 20px 24px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 50; transition: opacity 0.4s ease;
 }
 #controls.hidden { opacity: 0; pointer-events: none; }
 
@@ -121,8 +134,7 @@ body {
   display: flex; align-items: center; justify-content: center; gap: 12px;
 }
 .ctrl-btn {
-  background: rgba(255,255,255,0.12);
-  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
   width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: #fff; font-size: 1.2rem;
@@ -134,16 +146,14 @@ body {
 .ctrl-btn.active { background: rgba(255,255,255,0.3); }
 .ctrl-btn.large  { width: 58px; height: 58px; font-size: 1.5rem; }
 
-/* timing + transition row */
 .settings-row {
   display: flex; align-items: center; justify-content: center;
-  gap: 16px; flex-wrap: wrap;
+  gap: 12px; flex-wrap: wrap;
 }
 .setting-group {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border-radius: 20px; padding: 6px 14px;
+  background: rgba(255,255,255,0.08); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); border-radius: 20px; padding: 6px 14px;
 }
 .setting-group label { font-size: 0.75rem; color: rgba(255,255,255,0.65); white-space: nowrap; }
 .setting-group input[type=range] {
@@ -152,8 +162,7 @@ body {
   background: rgba(255,255,255,0.3); border-radius: 2px; outline: none;
 }
 .setting-group input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px; height: 16px;
+  -webkit-appearance: none; width: 16px; height: 16px;
   border-radius: 50%; background: #fff; cursor: pointer;
 }
 .setting-group select {
@@ -164,67 +173,74 @@ body {
 .setting-group select option { background: #111; color: #fff; }
 #timing-val { font-size: 0.8rem; color: #fff; min-width: 28px; }
 
-/* fullscreen top-right button */
-#fs-btn {
-  position: fixed; top: 16px; right: 16px;
-  background: rgba(255,255,255,0.12);
-  border: none; border-radius: 50%;
+/* ── Top HUD ── */
+#top-hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 51; transition: opacity 0.4s;
+  pointer-events: none;
+}
+#top-hud.hidden { opacity: 0; }
+#top-hud > * { pointer-events: all; }
+
+#counter {
+  background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); border-radius: 20px; padding: 4px 12px;
+  font-size: 0.75rem; color: rgba(255,255,255,0.6);
+}
+
+/* top-center add buttons */
+#add-more-wrap {
+  display: flex; gap: 8px; position: absolute;
+  left: 50%; transform: translateX(-50%);
+}
+#add-more-btn, #add-photos-btn {
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); border: none; border-radius: 20px;
+  padding: 6px 14px; color: rgba(255,255,255,0.7);
+  font-size: 0.8rem; cursor: pointer; transition: background 0.15s;
+}
+#add-more-btn:hover, #add-photos-btn:hover { background: rgba(255,255,255,0.2); }
+
+/* top-right cluster */
+#top-right { display: flex; gap: 8px; }
+.hud-btn {
+  background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: #fff; font-size: 1rem;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s, opacity 0.4s;
-  z-index: 51;
-}
-#fs-btn:hover { background: rgba(255,255,255,0.22); }
-#fs-btn.hidden { opacity: 0; pointer-events: none; }
-
-/* counter badge */
-#counter {
-  position: fixed; top: 16px; left: 16px;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border-radius: 20px; padding: 4px 12px;
-  font-size: 0.75rem; color: rgba(255,255,255,0.6);
-  z-index: 51;
-  transition: opacity 0.4s;
-}
-#counter.hidden { opacity: 0; }
-
-/* add more buttons */
-#add-more-wrap {
-  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 8px;
-  z-index: 51; transition: opacity 0.4s;
-}
-#add-more-wrap.hidden { opacity: 0; pointer-events: none; }
-#add-more-btn, #add-photos-btn {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border: none; border-radius: 20px; padding: 6px 14px;
-  color: rgba(255,255,255,0.7); font-size: 0.8rem; cursor: pointer;
   transition: background 0.15s;
 }
-#add-more-btn:hover, #add-photos-btn:hover { background: rgba(255,255,255,0.2); }
-#addMoreInput, #addPhotosInput { display: none; }
+.hud-btn:hover { background: rgba(255,255,255,0.22); }
+.hud-btn.active { background: rgba(255,255,255,0.3); }
+
+/* ── Present mode ── */
+body.present-mode #controls     { opacity: 0 !important; pointer-events: none !important; }
+body.present-mode #top-hud      { opacity: 0 !important; pointer-events: none !important; }
+body.present-mode #filmstrip-wrap{ opacity: 0 !important; pointer-events: none !important; }
+body.present-mode #img-info     { opacity: 0 !important; }
+body.present-mode #progress-bar { opacity: 0; }
+/* tap anywhere to briefly show controls in present mode */
+body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events: all !important; }
+
+/* AirPlay video anchor (hidden, just for picker) */
+#airplay-video { display: none; }
 </style>
 </head>
 <body>
 
-<!-- ══ LANDING / DROP ZONE ══ -->
+<!-- ══ LANDING ══ -->
 <div id="dropzone">
   <div class="icon">🖼️</div>
   <h1>Slideshow</h1>
   <p>Browse your Photos library, choose folders, or drag &amp; drop.</p>
   <div class="btn-row">
-    <button class="btn btn-primary" onclick="document.getElementById('photosInput').click()">
-      🌄 Photos Library
-    </button>
-    <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">
-      📁 Choose Folders
-    </button>
+    <button class="btn btn-primary"   onclick="document.getElementById('photosInput').click()">🌄 Photos Library</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">📁 Choose Folders</button>
   </div>
-  <p style="font-size:0.75rem;color:#444;">Supports JPG, PNG, GIF, WebP, HEIC, AVIF, TIFF, BMP, SVG</p>
+  <p style="font-size:0.75rem;color:#444;">JPG · PNG · GIF · WebP · HEIC · AVIF · TIFF · BMP · SVG</p>
   <input type="file" id="photosInput" multiple accept="image/*,.heic,.heif,.avif">
   <input type="file" id="folderInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
 </div>
@@ -234,19 +250,33 @@ body {
   <div id="slide-a" class="slide"></div>
   <div id="slide-b" class="slide"></div>
 </div>
+<video id="airplay-video" src="" x-webkit-airplay="allow" webkit-playsinline playsinline></video>
 
-<!-- ══ HUD ══ -->
+<!-- ══ PROGRESS ══ -->
 <div id="progress-bar"></div>
+
+<!-- ══ IMAGE INFO ══ -->
 <div id="img-info"></div>
-<div id="counter">1 / 1</div>
 
-<button id="fs-btn" title="Fullscreen (F)">⛶</button>
-
-<div id="add-more-wrap">
-  <button id="add-more-btn" onclick="document.getElementById('addMoreInput').click()">+ Folders</button>
-  <button id="add-photos-btn" onclick="document.getElementById('addPhotosInput').click()">+ Photos</button>
+<!-- ══ FILMSTRIP ══ -->
+<div id="filmstrip-wrap">
+  <div id="filmstrip"></div>
 </div>
-<input type="file" id="addMoreInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
+
+<!-- ══ TOP HUD ══ -->
+<div id="top-hud">
+  <div id="counter">1 / 1</div>
+  <div id="add-more-wrap">
+    <button id="add-more-btn"    onclick="document.getElementById('addMoreInput').click()">+ Folders</button>
+    <button id="add-photos-btn"  onclick="document.getElementById('addPhotosInput').click()">+ Photos</button>
+  </div>
+  <div id="top-right">
+    <button class="hud-btn" id="btn-airplay" title="AirPlay / Cast">📡</button>
+    <button class="hud-btn" id="btn-present" title="Present mode (P)">▶︎</button>
+    <button class="hud-btn" id="fs-btn"      title="Fullscreen (F)">⛶</button>
+  </div>
+</div>
+<input type="file" id="addMoreInput"   webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
 <input type="file" id="addPhotosInput" multiple accept="image/*,.heic,.heif,.avif">
 
 <!-- ══ CONTROLS ══ -->
@@ -267,51 +297,51 @@ body {
     </div>
   </div>
   <div class="controls-row">
-    <button class="ctrl-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
-    <button class="ctrl-btn" id="btn-prev"    title="Previous (←)">◀</button>
+    <button class="ctrl-btn" id="btn-shuffle"  title="Shuffle (S)">🔀</button>
+    <button class="ctrl-btn" id="btn-prev"     title="Prev (←)">◀</button>
     <button class="ctrl-btn large" id="btn-play" title="Play/Pause (Space)">⏸</button>
-    <button class="ctrl-btn" id="btn-next"    title="Next (→)">▶</button>
-    <button class="ctrl-btn" id="btn-restart" title="Restart">↩</button>
+    <button class="ctrl-btn" id="btn-next"     title="Next (→)">▶</button>
+    <button class="ctrl-btn" id="btn-restart"  title="Restart">↩</button>
   </div>
 </div>
 
 <script>
-// ── State ──
 const SUPPORTED = /\.(jpe?g|png|gif|webp|heic|heif|avif|tiff?|bmp|svg)$/i;
-let images = [];        // {file, name, folder, url}
-let idx = 0;
-let playing = true;
-let shuffled = false;
-let timer = null;
-let transitionDur = 700;
-let hideTimer = null;
-let controlsVisible = true;
-let currentSlot = 'a';  // which div is visible
+let images = [], idx = 0, playing = true, shuffled = false;
+let timer = null, hideTimer = null, controlsVisible = true;
+let presentMode = false, peekTimer = null;
+let currentSlot = 'a';
 
-// ── DOM ──
-const dropzone   = document.getElementById('dropzone');
-const stage      = document.getElementById('stage');
-const slideA     = document.getElementById('slide-a');
-const slideB     = document.getElementById('slide-b');
-const progressBar= document.getElementById('progress-bar');
-const imgInfo    = document.getElementById('img-info');
-const counter    = document.getElementById('counter');
-const fsBtn      = document.getElementById('fs-btn');
-const addMoreBtn = document.getElementById('add-more-wrap');
-const controls   = document.getElementById('controls');
-const btnPlay    = document.getElementById('btn-play');
-const btnPrev    = document.getElementById('btn-prev');
-const btnNext    = document.getElementById('btn-next');
-const btnShuffle = document.getElementById('btn-shuffle');
-const btnRestart = document.getElementById('btn-restart');
-const timingSlider = document.getElementById('timing');
-const timingVal    = document.getElementById('timing-val');
-const transSelect  = document.getElementById('transition');
-const folderInput    = document.getElementById('folderInput');
-const photosInput    = document.getElementById('photosInput');
-const addMoreInput   = document.getElementById('addMoreInput');
-const addPhotosInput = document.getElementById('addPhotosInput');
-const addMoreWrap    = document.getElementById('add-more-wrap');
+// DOM
+const dropzone      = document.getElementById('dropzone');
+const stage         = document.getElementById('stage');
+const slideA        = document.getElementById('slide-a');
+const slideB        = document.getElementById('slide-b');
+const progressBar   = document.getElementById('progress-bar');
+const imgInfo       = document.getElementById('img-info');
+const filmstripWrap = document.getElementById('filmstrip-wrap');
+const filmstrip     = document.getElementById('filmstrip');
+const topHud        = document.getElementById('top-hud');
+const counter       = document.getElementById('counter');
+const addMoreWrap   = document.getElementById('add-more-wrap');
+const controls      = document.getElementById('controls');
+const btnPlay       = document.getElementById('btn-play');
+const btnPrev       = document.getElementById('btn-prev');
+const btnNext       = document.getElementById('btn-next');
+const btnShuffle    = document.getElementById('btn-shuffle');
+const btnRestart    = document.getElementById('btn-restart');
+const btnAirplay    = document.getElementById('btn-airplay');
+const btnPresent    = document.getElementById('btn-present');
+const fsBtn         = document.getElementById('fs-btn');
+const timingSlider  = document.getElementById('timing');
+const timingVal     = document.getElementById('timing-val');
+const transSelect   = document.getElementById('transition');
+const airplayVideo  = document.getElementById('airplay-video');
+
+// Inputs
+['folderInput','photosInput','addMoreInput','addPhotosInput'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => loadFiles(e.target.files));
+});
 
 // ── File loading ──
 function loadFiles(fileList) {
@@ -320,159 +350,155 @@ function loadFiles(fileList) {
     if (!SUPPORTED.test(f.name)) continue;
     const parts = f.webkitRelativePath ? f.webkitRelativePath.split('/') : [f.name];
     const folder = parts.length > 1 ? parts[parts.length - 2] : '—';
-    newImgs.push({ file: f, name: f.name, folder, url: null });
+    newImgs.push({ file: f, name: f.name, folder, url: null, thumb: null });
   }
   if (!newImgs.length) return;
   images = images.concat(newImgs);
   if (shuffled) shuffleArr(images);
+  buildFilmstrip();
   startShow();
 }
 
-folderInput.addEventListener('change',    e => loadFiles(e.target.files));
-photosInput.addEventListener('change',    e => loadFiles(e.target.files));
-addMoreInput.addEventListener('change',   e => loadFiles(e.target.files));
-addPhotosInput.addEventListener('change', e => loadFiles(e.target.files));
-
 // ── Drag & drop ──
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave',  () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
 dropzone.addEventListener('drop', e => {
   e.preventDefault(); dropzone.classList.remove('drag-over');
-  const items = e.dataTransfer.items;
-  const files = [];
+  const items = e.dataTransfer.items, files = [];
   let pending = 0;
-  const tryStart = () => { if (pending === 0) loadFiles(files); };
+  const tryStart = () => { if (!pending) loadFiles(files); };
   for (const item of items) {
-    const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
-    if (entry && entry.isDirectory) {
-      pending++;
-      readDir(entry, files, () => { pending--; tryStart(); });
-    } else if (item.kind === 'file') {
-      const f = item.getAsFile();
-      if (f) files.push(f);
-    }
+    const entry = item.webkitGetAsEntry?.();
+    if (entry?.isDirectory) { pending++; readDir(entry, files, () => { pending--; tryStart(); }); }
+    else if (item.kind === 'file') { const f = item.getAsFile(); if (f) files.push(f); }
   }
   tryStart();
 });
 
-function readDir(dirEntry, out, done) {
-  const reader = dirEntry.createReader();
-  let allEntries = [];
-  const readBatch = () => reader.readEntries(batch => {
-    if (!batch.length) { processEntries(); return; }
-    allEntries = allEntries.concat(Array.from(batch));
-    readBatch();
+function readDir(dir, out, done) {
+  const reader = dir.createReader(); let all = [];
+  const read = () => reader.readEntries(batch => {
+    if (!batch.length) { process(); return; }
+    all = all.concat([...batch]); read();
   });
-  readBatch();
-  function processEntries() {
-    let p = allEntries.length || 1;
-    if (!allEntries.length) { done(); return; }
-    allEntries.forEach(entry => {
-      if (entry.isFile) {
-        entry.file(f => { out.push(f); if (!--p) done(); });
-      } else if (entry.isDirectory) {
-        readDir(entry, out, () => { if (!--p) done(); });
-      } else { if (!--p) done(); }
+  read();
+  function process() {
+    if (!all.length) { done(); return; }
+    let p = all.length;
+    all.forEach(e => {
+      if (e.isFile)      e.file(f => { out.push(f); if (!--p) done(); });
+      else if (e.isDirectory) readDir(e, out, () => { if (!--p) done(); });
+      else if (!--p) done();
     });
   }
 }
 
-// ── Show start ──
+// ── Filmstrip ──
+function buildFilmstrip() {
+  filmstrip.innerHTML = '';
+  images.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'thumb' + (i === idx ? ' active' : '');
+    div.dataset.idx = i;
+    const el = document.createElement('img');
+    el.alt = img.name;
+    // lazy-load thumb
+    getUrl(i, url => { el.src = url; });
+    div.appendChild(el);
+    div.addEventListener('click', () => {
+      clearTimeout(timer);
+      loadAndShow(i, 1);
+      if (playing) scheduleNext();
+    });
+    filmstrip.appendChild(div);
+  });
+}
+
+function updateFilmstrip() {
+  const thumbs = filmstrip.querySelectorAll('.thumb');
+  thumbs.forEach((t, i) => t.classList.toggle('active', i === idx));
+  // scroll active thumb into view
+  if (thumbs[idx]) {
+    thumbs[idx].scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// ── Show ──
 function startShow() {
-  idx = 0;
   dropzone.style.display = 'none';
   stage.style.display = 'block';
-  loadAndShow(idx, null);
+  if (images.length === 1 || idx >= images.length) idx = 0;
+  loadAndShow(idx, 1);
   if (playing) scheduleNext();
 }
 
-function getSlide(slot) { return slot === 'a' ? slideA : slideB; }
-function otherSlot(slot) { return slot === 'a' ? 'b' : 'a'; }
+function getSlide(s)  { return s === 'a' ? slideA : slideB; }
+function otherSlot(s) { return s === 'a' ? 'b' : 'a'; }
 
-// Pre-load a URL for an image
 function getUrl(i, cb) {
   if (images[i].url) { cb(images[i].url); return; }
-  const reader = new FileReader();
-  reader.onload = e => { images[i].url = e.target.result; cb(e.target.result); };
-  reader.readAsDataURL(images[i].file);
+  const r = new FileReader();
+  r.onload = e => { images[i].url = e.target.result; cb(e.target.result); };
+  r.readAsDataURL(images[i].file);
 }
 
-function loadAndShow(newIdx, direction) {
+function loadAndShow(newIdx, dir) {
   if (!images.length) return;
   const img = images[newIdx];
   const transition = transSelect.value;
   getUrl(newIdx, url => {
-    const nextSlot = otherSlot(currentSlot);
+    const nextSlot  = otherSlot(currentSlot);
     const nextSlide = getSlide(nextSlot);
     const currSlide = getSlide(currentSlot);
-
-    // Set up next slide
     nextSlide.innerHTML = '';
     const el = document.createElement('img');
-    el.src = url;
-    el.alt = img.name;
+    el.src = url; el.alt = img.name;
     nextSlide.appendChild(el);
 
-    const dur = transition === 'none' ? 0 : (transition === 'fade' ? 700 : 500);
-    document.documentElement.style.setProperty('--duration', dur + 'ms');
+    const dur = transition === 'none' ? 0 : transition === 'fade' ? 700 : 500;
+    document.documentElement.style.setProperty('--dur', dur + 'ms');
 
     if (transition === 'fade') {
       currSlide.classList.remove('active');
-      nextSlide.classList.add('active', 'fade-in');
-      setTimeout(() => {
-        currSlide.innerHTML = '';
-        nextSlide.classList.remove('fade-in');
-        currentSlot = nextSlot;
-      }, dur);
+      nextSlide.classList.add('active','fade-in');
+      setTimeout(() => { currSlide.innerHTML=''; nextSlide.classList.remove('fade-in'); currentSlot=nextSlot; }, dur);
     } else if (transition === 'slide') {
-      nextSlide.classList.add('active', 'slide-in-left');
+      nextSlide.classList.add('active','slide-in-left');
       currSlide.classList.add('slide-out-left');
-      setTimeout(() => {
-        currSlide.classList.remove('active', 'slide-out-left');
-        nextSlide.classList.remove('slide-in-left');
-        currSlide.innerHTML = '';
-        currentSlot = nextSlot;
-      }, dur);
+      setTimeout(() => { currSlide.classList.remove('active','slide-out-left'); nextSlide.classList.remove('slide-in-left'); currSlide.innerHTML=''; currentSlot=nextSlot; }, dur);
     } else {
-      currSlide.classList.remove('active');
-      currSlide.innerHTML = '';
-      nextSlide.classList.add('active');
-      currentSlot = nextSlot;
+      currSlide.classList.remove('active'); currSlide.innerHTML='';
+      nextSlide.classList.add('active'); currentSlot = nextSlot;
     }
 
-    // Pre-load next
-    const preIdx = (newIdx + 1) % images.length;
-    if (preIdx !== newIdx) getUrl(preIdx, () => {});
+    // preload next
+    const pre = (newIdx+1) % images.length;
+    if (pre !== newIdx) getUrl(pre, () => {});
 
-    // Update HUD
     idx = newIdx;
     updateHUD();
+    updateFilmstrip();
   });
 }
 
 function updateHUD() {
   const img = images[idx];
   imgInfo.textContent = img ? `${img.folder}  /  ${img.name}` : '';
-  counter.textContent = `${idx + 1} / ${images.length}`;
+  counter.textContent = `${idx+1} / ${images.length}`;
   progressBar.style.width = images.length > 1
-    ? ((idx / (images.length - 1)) * 100) + '%'
-    : '100%';
+    ? ((idx / (images.length-1)) * 100) + '%' : '100%';
 }
 
 // ── Playback ──
 function scheduleNext() {
   clearTimeout(timer);
-  const secs = parseInt(timingSlider.value);
-  timer = setTimeout(() => advance(1), secs * 1000);
+  timer = setTimeout(() => advance(1), parseInt(timingSlider.value) * 1000);
 }
-
 function advance(dir) {
   if (!images.length) return;
-  const newIdx = (idx + dir + images.length) % images.length;
-  loadAndShow(newIdx, dir);
+  loadAndShow((idx + dir + images.length) % images.length, dir);
   if (playing) scheduleNext();
 }
-
 function togglePlay() {
   playing = !playing;
   btnPlay.textContent = playing ? '⏸' : '▶';
@@ -480,91 +506,125 @@ function togglePlay() {
 }
 
 btnPlay.addEventListener('click', togglePlay);
-btnPrev.addEventListener('click', () => { clearTimeout(timer); advance(-1); if (playing) scheduleNext(); });
+btnPrev.addEventListener('click', () => { clearTimeout(timer); advance(-1); });
 btnNext.addEventListener('click', () => { clearTimeout(timer); advance(1); });
-btnRestart.addEventListener('click', () => { clearTimeout(timer); loadAndShow(0, 0); if (playing) scheduleNext(); });
-
+btnRestart.addEventListener('click', () => { clearTimeout(timer); loadAndShow(0,1); if(playing) scheduleNext(); });
 btnShuffle.addEventListener('click', () => {
   shuffled = !shuffled;
   btnShuffle.classList.toggle('active', shuffled);
   if (shuffled) shuffleArr(images);
   else images.sort((a,b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
-  idx = 0; loadAndShow(0, 0); if (playing) scheduleNext();
+  buildFilmstrip(); loadAndShow(0,1); if(playing) scheduleNext();
 });
-
 timingSlider.addEventListener('input', () => {
   timingVal.textContent = timingSlider.value + 's';
   if (playing) { clearTimeout(timer); scheduleNext(); }
 });
 
-// ── Shuffle ──
 function shuffleArr(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  for (let i=arr.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
   }
 }
 
 // ── Fullscreen ──
 fsBtn.addEventListener('click', toggleFS);
 function toggleFS() {
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    const el = document.documentElement;
+  const el = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement)
     (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
-  } else {
+  else
     (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-  }
+}
+function updateFsBtn() {
+  fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '⊠' : '⛶';
 }
 document.addEventListener('fullscreenchange', updateFsBtn);
 document.addEventListener('webkitfullscreenchange', updateFsBtn);
-function updateFsBtn() {
-  const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  fsBtn.textContent = inFs ? '⊠' : '⛶';
+
+// ── AirPlay ──
+btnAirplay.addEventListener('click', () => {
+  // Try native AirPlay picker on WebKit
+  if (airplayVideo.webkitShowPlaybackTargetPicker) {
+    airplayVideo.webkitShowPlaybackTargetPicker();
+  } else {
+    // Fallback: go fullscreen (best we can do on non-WebKit)
+    toggleFS();
+  }
+});
+if (window.WebKitPlaybackTargetAvailabilityEvent) {
+  airplayVideo.addEventListener('webkitplaybacktargetavailabilitychanged', e => {
+    btnAirplay.classList.toggle('active', e.availability === 'available');
+  });
 }
 
+// ── Present mode ──
+btnPresent.addEventListener('click', togglePresent);
+function togglePresent() {
+  presentMode = !presentMode;
+  document.body.classList.toggle('present-mode', presentMode);
+  btnPresent.classList.toggle('active', presentMode);
+  btnPresent.title = presentMode ? 'Exit Present Mode (P)' : 'Present Mode (P)';
+  if (presentMode) {
+    // also go fullscreen
+    const el = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement)
+      (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{});
+  }
+}
+
+// Tap in present mode → brief peek at controls
+stage.addEventListener('click', e => {
+  if (!presentMode) return;
+  if (e.target.closest('#controls') || e.target.closest('#top-hud')) return;
+  document.body.classList.add('present-peek');
+  clearTimeout(peekTimer);
+  peekTimer = setTimeout(() => document.body.classList.remove('present-peek'), 2500);
+});
+
 // ── Auto-hide controls ──
+const hudEls = [controls, topHud, filmstripWrap, imgInfo];
 function showControls() {
-  controls.classList.remove('hidden');
-  fsBtn.classList.remove('hidden');
-  counter.classList.remove('hidden');
-  addMoreBtn.classList.remove('hidden');
+  if (presentMode) return;
+  hudEls.forEach(el => el.classList.remove('hidden'));
   controlsVisible = true;
   clearTimeout(hideTimer);
   if (images.length) hideTimer = setTimeout(hideControls, 3000);
 }
 function hideControls() {
-  controls.classList.add('hidden');
-  fsBtn.classList.add('hidden');
-  counter.classList.add('hidden');
-  addMoreBtn.classList.add('hidden');
+  hudEls.forEach(el => el.classList.add('hidden'));
   controlsVisible = false;
 }
 
 document.addEventListener('mousemove', showControls);
 document.addEventListener('touchstart', showControls, { passive: true });
 document.addEventListener('click', e => {
-  if (!controlsVisible && !e.target.closest('#dropzone')) showControls();
+  if (!controlsVisible && !presentMode && !e.target.closest('#dropzone')) showControls();
 });
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   switch(e.key) {
-    case ' ':      e.preventDefault(); togglePlay(); break;
-    case 'ArrowLeft':  clearTimeout(timer); advance(-1); if (playing) scheduleNext(); break;
-    case 'ArrowRight': clearTimeout(timer); advance(1); break;
+    case ' ':         e.preventDefault(); togglePlay(); break;
+    case 'ArrowLeft': clearTimeout(timer); advance(-1); break;
+    case 'ArrowRight':clearTimeout(timer); advance(1); break;
     case 'f': case 'F': toggleFS(); break;
     case 's': case 'S': btnShuffle.click(); break;
-    case 'Escape': if (document.fullscreenElement || document.webkitFullscreenElement)
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document); break;
+    case 'p': case 'P': togglePresent(); break;
+    case 'Escape':
+      if (presentMode) { togglePresent(); }
+      else if (document.fullscreenElement || document.webkitFullscreenElement)
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      break;
   }
 });
-  // ── Service Worker ──
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () =>
-      navigator.serviceWorker.register("./sw.js").catch(() => {})
-    );
-  }
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
