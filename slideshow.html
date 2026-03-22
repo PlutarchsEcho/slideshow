@@ -191,18 +191,22 @@ body {
 }
 #counter.hidden { opacity: 0; }
 
-/* add more button */
-#add-more-btn {
+/* add more buttons */
+#add-more-wrap {
   position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+  z-index: 51; transition: opacity 0.4s;
+}
+#add-more-wrap.hidden { opacity: 0; pointer-events: none; }
+#add-more-btn, #add-photos-btn {
   background: rgba(255,255,255,0.1);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border: none; border-radius: 20px; padding: 6px 16px;
+  border: none; border-radius: 20px; padding: 6px 14px;
   color: rgba(255,255,255,0.7); font-size: 0.8rem; cursor: pointer;
-  z-index: 51; transition: opacity 0.4s, background 0.15s;
+  transition: background 0.15s;
 }
-#add-more-btn:hover { background: rgba(255,255,255,0.2); }
-#add-more-btn.hidden { opacity: 0; pointer-events: none; }
-#addMoreInput { display: none; }
+#add-more-btn:hover, #add-photos-btn:hover { background: rgba(255,255,255,0.2); }
+#addMoreInput, #addPhotosInput { display: none; }
 </style>
 </head>
 <body>
@@ -211,13 +215,17 @@ body {
 <div id="dropzone">
   <div class="icon">🖼️</div>
   <h1>Slideshow</h1>
-  <p>Drag &amp; drop one or more image folders here, or click to browse.</p>
+  <p>Browse your Photos library, choose folders, or drag &amp; drop.</p>
   <div class="btn-row">
-    <button class="btn btn-primary" onclick="document.getElementById('folderInput').click()">
+    <button class="btn btn-primary" onclick="document.getElementById('photosInput').click()">
+      🌄 Photos Library
+    </button>
+    <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">
       📁 Choose Folders
     </button>
   </div>
   <p style="font-size:0.75rem;color:#444;">Supports JPG, PNG, GIF, WebP, HEIC, AVIF, TIFF, BMP, SVG</p>
+  <input type="file" id="photosInput" multiple accept="image/*,.heic,.heif,.avif">
   <input type="file" id="folderInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
 </div>
 
@@ -234,8 +242,12 @@ body {
 
 <button id="fs-btn" title="Fullscreen (F)">⛶</button>
 
-<button id="add-more-btn" onclick="document.getElementById('addMoreInput').click()">+ Add Folders</button>
+<div id="add-more-wrap">
+  <button id="add-more-btn" onclick="document.getElementById('addMoreInput').click()">+ Folders</button>
+  <button id="add-photos-btn" onclick="document.getElementById('addPhotosInput').click()">+ Photos</button>
+</div>
 <input type="file" id="addMoreInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
+<input type="file" id="addPhotosInput" multiple accept="image/*,.heic,.heif,.avif">
 
 <!-- ══ CONTROLS ══ -->
 <div id="controls">
@@ -285,7 +297,7 @@ const progressBar= document.getElementById('progress-bar');
 const imgInfo    = document.getElementById('img-info');
 const counter    = document.getElementById('counter');
 const fsBtn      = document.getElementById('fs-btn');
-const addMoreBtn = document.getElementById('add-more-btn');
+const addMoreBtn = document.getElementById('add-more-wrap');
 const controls   = document.getElementById('controls');
 const btnPlay    = document.getElementById('btn-play');
 const btnPrev    = document.getElementById('btn-prev');
@@ -295,8 +307,11 @@ const btnRestart = document.getElementById('btn-restart');
 const timingSlider = document.getElementById('timing');
 const timingVal    = document.getElementById('timing-val');
 const transSelect  = document.getElementById('transition');
-const folderInput  = document.getElementById('folderInput');
-const addMoreInput = document.getElementById('addMoreInput');
+const folderInput    = document.getElementById('folderInput');
+const photosInput    = document.getElementById('photosInput');
+const addMoreInput   = document.getElementById('addMoreInput');
+const addPhotosInput = document.getElementById('addPhotosInput');
+const addMoreWrap    = document.getElementById('add-more-wrap');
 
 // ── File loading ──
 function loadFiles(fileList) {
@@ -313,8 +328,10 @@ function loadFiles(fileList) {
   startShow();
 }
 
-folderInput.addEventListener('change', e => loadFiles(e.target.files));
-addMoreInput.addEventListener('change', e => { loadFiles(e.target.files); });
+folderInput.addEventListener('change',    e => loadFiles(e.target.files));
+photosInput.addEventListener('change',    e => loadFiles(e.target.files));
+addMoreInput.addEventListener('change',   e => loadFiles(e.target.files));
+addPhotosInput.addEventListener('change', e => loadFiles(e.target.files));
 
 // ── Drag & drop ──
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
