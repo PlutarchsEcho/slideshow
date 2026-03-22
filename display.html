@@ -2,73 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Display</title>
+<title>Slideshow Display</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: #000; overflow: hidden; width: 100vw; height: 100vh; }
-.slide { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
-.slide img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
-.slide.active { opacity: 1; }
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-@keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
-@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }
-@keyframes slideOut { from { transform: translateX(0) } to { transform: translateX(-100%) } }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
+#slide { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#slide img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
 </style>
 </head>
 <body>
-<div id="a" class="slide active"><img id="ia" src="" alt=""></div>
-<div id="b" class="slide"><img id="ib" src="" alt=""></div>
+<div id="slide"><img id="img" src="" alt=""></div>
 <script>
-const ch = new BroadcastChannel('slideshow');
-const slotA = document.getElementById('a'), slotB = document.getElementById('b');
-const imgA = document.getElementById('ia'), imgB = document.getElementById('ib');
-let curr = 'a', busy = false;
+const bc = new BroadcastChannel('slideshow');
+const img = document.getElementById('img');
 
-// Auto fullscreen
-document.documentElement.requestFullscreen?.().catch(()=>{});
+// Auto fullscreen immediately
+document.documentElement.requestFullscreen?.().catch(() => {});
 
-ch.onmessage = ({data}) => {
-  if (data.cmd === 'show') show(data.url, data.transition);
-  if (data.cmd === 'close') window.close();
+bc.onmessage = ({data}) => {
+  if (data.cmd === 'show' && data.url) {
+    img.src = data.url;
+  }
+  if (data.cmd === 'close') {
+    window.close();
+  }
 };
-ch.postMessage({cmd: 'ready'});
 
-function show(url, type) {
-  if (busy) return;
-  const next = curr === 'a' ? 'b' : 'a';
-  const nextSlot = next === 'a' ? slotA : slotB;
-  const currSlot = curr === 'a' ? slotA : slotB;
-  const nextImg = next === 'a' ? imgA : imgB;
-  nextImg.src = url;
-  nextImg.onload = () => {
-    const dur = type === 'fade' ? 700 : type === 'slide' ? 500 : 0;
-    if (dur === 0) {
-      currSlot.classList.remove('active');
-      nextSlot.classList.add('active');
-      curr = next; return;
-    }
-    busy = true;
-    if (type === 'fade') {
-      nextSlot.style.animation = `fadeIn ${dur}ms ease forwards`;
-      currSlot.style.animation = `fadeOut ${dur}ms ease forwards`;
-    } else {
-      nextSlot.style.animation = `slideIn ${dur}ms ease forwards`;
-      currSlot.style.animation = `slideOut ${dur}ms ease forwards`;
-    }
-    nextSlot.classList.add('active');
-    setTimeout(() => {
-      currSlot.classList.remove('active');
-      currSlot.style.animation = '';
-      nextSlot.style.animation = '';
-      curr = next; busy = false;
-    }, dur);
-  };
-  if (nextImg.complete) nextImg.onload();
-}
-setInterval(() => ch.postMessage({cmd: 'pong'}), 5000);
+// Tell controller we're ready
+bc.postMessage({cmd: 'ready'});
+
+// Ping every 3 seconds so controller knows we're alive
+setInterval(() => bc.postMessage({cmd: 'ping'}), 3000);
 </script>
 </body>
 </html>

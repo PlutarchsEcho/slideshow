@@ -94,7 +94,7 @@ body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events:
   <div id="top-right">
     <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">&#128256;</button>
     <button class="hud-btn" id="btn-airplay" title="AirPlay">&#128225;</button>
-    <button class="hud-btn" id="btn-present" title="Present on TV (P)">&#128250;</button>
+    <button class="hud-btn" id="btn-present" title="Open Display for TV (P)">&#128250;</button>
     <button class="hud-btn" id="btn-fullscreen" title="Fullscreen (F)">&#9974;</button>
   </div>
 </div>
@@ -151,7 +151,7 @@ function nextImage(){showImage(currentIndex+1);}
 function prevImage(){showImage(currentIndex-1);}
 function toggleShuffle(){isShuffled=!isShuffled;btnShuffle.classList.toggle("active",isShuffled);if(isShuffled){images=[...images].sort(()=>Math.random()-0.5);}else{images=[...originalOrder];}updateFilmstrip();showImage(0);}
 function updateDisplayStatus(){if(displayReady&&displayWindow&&!displayWindow.closed){displayStatus.classList.add("visible");btnPresent.classList.add("live");}else{displayStatus.classList.remove("visible");btnPresent.classList.remove("live");displayReady=false;}}
-function openDisplayWindow(){if(displayWindow&&!displayWindow.closed){displayWindow.focus();return;}displayWindow=window.open("display.html","slideshow-display","width=1280,height=720,menubar=no,toolbar=no,location=no,status=no");updateDisplayStatus();const checkInterval=setInterval(()=>{if(!displayWindow||displayWindow.closed){clearInterval(checkInterval);displayReady=false;updateDisplayStatus();}},1000);}
+function openDisplayWindow(){if(displayWindow&&!displayWindow.closed){displayWindow.focus();return;}const features="popup,width=screen.width,height=screen.height,menubar=no,toolbar=no,location=no,status=no";displayWindow=window.open("display.html","slideshow-display",features);if(!displayWindow||displayWindow.closed){alert("Display window blocked by popup blocker.\n\nPlease:\n1. Allow popups for this site\n2. Tap Present again\n\nOr manually open display.html in a new tab.");return;}updateDisplayStatus();setTimeout(()=>{if(displayWindow&&displayWindow.document&&displayWindow.document.documentElement){displayWindow.document.documentElement.requestFullscreen?.().catch(()=>{});}},500);const checkInterval=setInterval(()=>{if(!displayWindow||displayWindow.closed){clearInterval(checkInterval);displayReady=false;updateDisplayStatus();}},1000);}
 function syncToDisplay(){if(channel&&displayReady&&images.length>0){const currentImage=images[currentIndex];channel.postMessage({cmd:"show",url:currentImage.url,transition:transition});}}
 function togglePresentMode(){isPresentMode=!isPresentMode;document.body.classList.toggle("present-mode",isPresentMode);if(isPresentMode)openDisplayWindow();}
 function toggleFullscreen(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();}else{document.exitFullscreen();}}
