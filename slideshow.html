@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<title>Slideshow</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+/* ── Drop zone / landing screen ── */
+#dropzone {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 24px;
+  background: #0a0a0a;
+  z-index: 100;
+  transition: background 0.2s;
+}
+#dropzone.drag-over { background: #111820; }
+#dropzone h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.5px; }
+#dropzone p  { color: #666; font-size: 1rem; text-align: center; max-width: 360px; line-height: 1.5; }
+#dropzone .icon { font-size: 4rem; opacity: 0.4; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px;
+  border: none; border-radius: 10px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: #fff; color: #000; }
+.btn-secondary { background: #1e1e1e; color: #fff; border: 1px solid #333; }
+.btn:hover { opacity: 0.85; }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+#folderInput { display: none; }
+
+/* ── Slideshow stage ── */
+#stage {
+  position: fixed; inset: 0;
+  background: #000;
+  display: none;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: none;
+}
+.slide.active { opacity: 1; }
+.slide.fade-in  { animation: fadeIn var(--duration, 0.7s) ease forwards; }
+.slide.fade-out { animation: fadeOut var(--duration, 0.7s) ease forwards; }
+.slide.slide-in-left  { animation: slideInLeft var(--duration, 0.5s) ease forwards; }
+.slide.slide-out-left { animation: slideOutLeft var(--duration, 0.5s) ease forwards; }
+
+@keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut     { from { opacity: 1 } to { opacity: 0 } }
+@keyframes slideInLeft { from { transform: translateX(100%) } to { transform: translateX(0) } }
+@keyframes slideOutLeft{ from { transform: translateX(0) }     to { transform: translateX(-100%) } }
+
+.slide img {
+  max-width: 100%; max-height: 100%;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Progress bar ── */
+#progress-bar {
+  position: fixed; top: 0; left: 0;
+  height: 3px; background: rgba(255,255,255,0.85);
+  width: 0%; z-index: 50;
+  transition: width 0.3s linear;
+  box-shadow: 0 0 6px rgba(255,255,255,0.5);
+}
+
+/* ── Image info ── */
+#img-info {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px; padding: 6px 14px;
+  font-size: 0.78rem; color: rgba(255,255,255,0.7);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 80vw; text-align: center;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* ── Controls overlay ── */
+#controls {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 16px 20px 24px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 50;
+  transition: opacity 0.4s ease;
+}
+#controls.hidden { opacity: 0; pointer-events: none; }
+
+.controls-row {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.12);
+  border: none; border-radius: 50%;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff; font-size: 1.2rem;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s, transform 0.1s;
+}
+.ctrl-btn:hover  { background: rgba(255,255,255,0.22); }
+.ctrl-btn:active { transform: scale(0.93); }
+.ctrl-btn.active { background: rgba(255,255,255,0.3); }
+.ctrl-btn.large  { width: 58px; height: 58px; font-size: 1.5rem; }
+
+/* timing + transition row */
+.settings-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; flex-wrap: wrap;
+}
+.setting-group {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px; padding: 6px 14px;
+}
+.setting-group label { font-size: 0.75rem; color: rgba(255,255,255,0.65); white-space: nowrap; }
+.setting-group input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 90px; height: 4px;
+  background: rgba(255,255,255,0.3); border-radius: 2px; outline: none;
+}
+.setting-group input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%; background: #fff; cursor: pointer;
+}
+.setting-group select {
+  background: transparent; border: none; color: #fff;
+  font-size: 0.8rem; cursor: pointer; outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.setting-group select option { background: #111; color: #fff; }
+#timing-val { font-size: 0.8rem; color: #fff; min-width: 28px; }
+
+/* fullscreen top-right button */
+#fs-btn {
+  position: fixed; top: 16px; right: 16px;
+  background: rgba(255,255,255,0.12);
+  border: none; border-radius: 50%;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff; font-size: 1rem;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s, opacity 0.4s;
+  z-index: 51;
+}
+#fs-btn:hover { background: rgba(255,255,255,0.22); }
+#fs-btn.hidden { opacity: 0; pointer-events: none; }
+
+/* counter badge */
+#counter {
+  position: fixed; top: 16px; left: 16px;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 0.75rem; color: rgba(255,255,255,0.6);
+  z-index: 51;
+  transition: opacity 0.4s;
+}
+#counter.hidden { opacity: 0; }
+
+/* add more button */
+#add-more-btn {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: none; border-radius: 20px; padding: 6px 16px;
+  color: rgba(255,255,255,0.7); font-size: 0.8rem; cursor: pointer;
+  z-index: 51; transition: opacity 0.4s, background 0.15s;
+}
+#add-more-btn:hover { background: rgba(255,255,255,0.2); }
+#add-more-btn.hidden { opacity: 0; pointer-events: none; }
+#addMoreInput { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING / DROP ZONE ══ -->
+<div id="dropzone">
+  <div class="icon">🖼️</div>
+  <h1>Slideshow</h1>
+  <p>Drag &amp; drop one or more image folders here, or click to browse.</p>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="document.getElementById('folderInput').click()">
+      📁 Choose Folders
+    </button>
+  </div>
+  <p style="font-size:0.75rem;color:#444;">Supports JPG, PNG, GIF, WebP, HEIC, AVIF, TIFF, BMP, SVG</p>
+  <input type="file" id="folderInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
+</div>
+
+<!-- ══ STAGE ══ -->
+<div id="stage">
+  <div id="slide-a" class="slide"></div>
+  <div id="slide-b" class="slide"></div>
+</div>
+
+<!-- ══ HUD ══ -->
+<div id="progress-bar"></div>
+<div id="img-info"></div>
+<div id="counter">1 / 1</div>
+
+<button id="fs-btn" title="Fullscreen (F)">⛶</button>
+
+<button id="add-more-btn" onclick="document.getElementById('addMoreInput').click()">+ Add Folders</button>
+<input type="file" id="addMoreInput" webkitdirectory multiple accept="image/*,.heic,.heif,.avif,.tiff,.tif">
+
+<!-- ══ CONTROLS ══ -->
+<div id="controls">
+  <div class="settings-row">
+    <div class="setting-group">
+      <label>Speed</label>
+      <input type="range" id="timing" min="1" max="30" value="5" step="1">
+      <span id="timing-val">5s</span>
+    </div>
+    <div class="setting-group">
+      <label>Transition</label>
+      <select id="transition">
+        <option value="fade">Fade</option>
+        <option value="slide">Slide</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+  </div>
+  <div class="controls-row">
+    <button class="ctrl-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
+    <button class="ctrl-btn" id="btn-prev"    title="Previous (←)">◀</button>
+    <button class="ctrl-btn large" id="btn-play" title="Play/Pause (Space)">⏸</button>
+    <button class="ctrl-btn" id="btn-next"    title="Next (→)">▶</button>
+    <button class="ctrl-btn" id="btn-restart" title="Restart">↩</button>
+  </div>
+</div>
+
+<script>
+// ── State ──
+const SUPPORTED = /\.(jpe?g|png|gif|webp|heic|heif|avif|tiff?|bmp|svg)$/i;
+let images = [];        // {file, name, folder, url}
+let idx = 0;
+let playing = true;
+let shuffled = false;
+let timer = null;
+let transitionDur = 700;
+let hideTimer = null;
+let controlsVisible = true;
+let currentSlot = 'a';  // which div is visible
+
+// ── DOM ──
+const dropzone   = document.getElementById('dropzone');
+const stage      = document.getElementById('stage');
+const slideA     = document.getElementById('slide-a');
+const slideB     = document.getElementById('slide-b');
+const progressBar= document.getElementById('progress-bar');
+const imgInfo    = document.getElementById('img-info');
+const counter    = document.getElementById('counter');
+const fsBtn      = document.getElementById('fs-btn');
+const addMoreBtn = document.getElementById('add-more-btn');
+const controls   = document.getElementById('controls');
+const btnPlay    = document.getElementById('btn-play');
+const btnPrev    = document.getElementById('btn-prev');
+const btnNext    = document.getElementById('btn-next');
+const btnShuffle = document.getElementById('btn-shuffle');
+const btnRestart = document.getElementById('btn-restart');
+const timingSlider = document.getElementById('timing');
+const timingVal    = document.getElementById('timing-val');
+const transSelect  = document.getElementById('transition');
+const folderInput  = document.getElementById('folderInput');
+const addMoreInput = document.getElementById('addMoreInput');
+
+// ── File loading ──
+function loadFiles(fileList) {
+  const newImgs = [];
+  for (const f of fileList) {
+    if (!SUPPORTED.test(f.name)) continue;
+    const parts = f.webkitRelativePath ? f.webkitRelativePath.split('/') : [f.name];
+    const folder = parts.length > 1 ? parts[parts.length - 2] : '—';
+    newImgs.push({ file: f, name: f.name, folder, url: null });
+  }
+  if (!newImgs.length) return;
+  images = images.concat(newImgs);
+  if (shuffled) shuffleArr(images);
+  startShow();
+}
+
+folderInput.addEventListener('change', e => loadFiles(e.target.files));
+addMoreInput.addEventListener('change', e => { loadFiles(e.target.files); });
+
+// ── Drag & drop ──
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave',  () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  const items = e.dataTransfer.items;
+  const files = [];
+  let pending = 0;
+  const tryStart = () => { if (pending === 0) loadFiles(files); };
+  for (const item of items) {
+    const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+    if (entry && entry.isDirectory) {
+      pending++;
+      readDir(entry, files, () => { pending--; tryStart(); });
+    } else if (item.kind === 'file') {
+      const f = item.getAsFile();
+      if (f) files.push(f);
+    }
+  }
+  tryStart();
+});
+
+function readDir(dirEntry, out, done) {
+  const reader = dirEntry.createReader();
+  let allEntries = [];
+  const readBatch = () => reader.readEntries(batch => {
+    if (!batch.length) { processEntries(); return; }
+    allEntries = allEntries.concat(Array.from(batch));
+    readBatch();
+  });
+  readBatch();
+  function processEntries() {
+    let p = allEntries.length || 1;
+    if (!allEntries.length) { done(); return; }
+    allEntries.forEach(entry => {
+      if (entry.isFile) {
+        entry.file(f => { out.push(f); if (!--p) done(); });
+      } else if (entry.isDirectory) {
+        readDir(entry, out, () => { if (!--p) done(); });
+      } else { if (!--p) done(); }
+    });
+  }
+}
+
+// ── Show start ──
+function startShow() {
+  idx = 0;
+  dropzone.style.display = 'none';
+  stage.style.display = 'block';
+  loadAndShow(idx, null);
+  if (playing) scheduleNext();
+}
+
+function getSlide(slot) { return slot === 'a' ? slideA : slideB; }
+function otherSlot(slot) { return slot === 'a' ? 'b' : 'a'; }
+
+// Pre-load a URL for an image
+function getUrl(i, cb) {
+  if (images[i].url) { cb(images[i].url); return; }
+  const reader = new FileReader();
+  reader.onload = e => { images[i].url = e.target.result; cb(e.target.result); };
+  reader.readAsDataURL(images[i].file);
+}
+
+function loadAndShow(newIdx, direction) {
+  if (!images.length) return;
+  const img = images[newIdx];
+  const transition = transSelect.value;
+  getUrl(newIdx, url => {
+    const nextSlot = otherSlot(currentSlot);
+    const nextSlide = getSlide(nextSlot);
+    const currSlide = getSlide(currentSlot);
+
+    // Set up next slide
+    nextSlide.innerHTML = '';
+    const el = document.createElement('img');
+    el.src = url;
+    el.alt = img.name;
+    nextSlide.appendChild(el);
+
+    const dur = transition === 'none' ? 0 : (transition === 'fade' ? 700 : 500);
+    document.documentElement.style.setProperty('--duration', dur + 'ms');
+
+    if (transition === 'fade') {
+      currSlide.classList.remove('active');
+      nextSlide.classList.add('active', 'fade-in');
+      setTimeout(() => {
+        currSlide.innerHTML = '';
+        nextSlide.classList.remove('fade-in');
+        currentSlot = nextSlot;
+      }, dur);
+    } else if (transition === 'slide') {
+      nextSlide.classList.add('active', 'slide-in-left');
+      currSlide.classList.add('slide-out-left');
+      setTimeout(() => {
+        currSlide.classList.remove('active', 'slide-out-left');
+        nextSlide.classList.remove('slide-in-left');
+        currSlide.innerHTML = '';
+        currentSlot = nextSlot;
+      }, dur);
+    } else {
+      currSlide.classList.remove('active');
+      currSlide.innerHTML = '';
+      nextSlide.classList.add('active');
+      currentSlot = nextSlot;
+    }
+
+    // Pre-load next
+    const preIdx = (newIdx + 1) % images.length;
+    if (preIdx !== newIdx) getUrl(preIdx, () => {});
+
+    // Update HUD
+    idx = newIdx;
+    updateHUD();
+  });
+}
+
+function updateHUD() {
+  const img = images[idx];
+  imgInfo.textContent = img ? `${img.folder}  /  ${img.name}` : '';
+  counter.textContent = `${idx + 1} / ${images.length}`;
+  progressBar.style.width = images.length > 1
+    ? ((idx / (images.length - 1)) * 100) + '%'
+    : '100%';
+}
+
+// ── Playback ──
+function scheduleNext() {
+  clearTimeout(timer);
+  const secs = parseInt(timingSlider.value);
+  timer = setTimeout(() => advance(1), secs * 1000);
+}
+
+function advance(dir) {
+  if (!images.length) return;
+  const newIdx = (idx + dir + images.length) % images.length;
+  loadAndShow(newIdx, dir);
+  if (playing) scheduleNext();
+}
+
+function togglePlay() {
+  playing = !playing;
+  btnPlay.textContent = playing ? '⏸' : '▶';
+  if (playing) scheduleNext(); else clearTimeout(timer);
+}
+
+btnPlay.addEventListener('click', togglePlay);
+btnPrev.addEventListener('click', () => { clearTimeout(timer); advance(-1); if (playing) scheduleNext(); });
+btnNext.addEventListener('click', () => { clearTimeout(timer); advance(1); });
+btnRestart.addEventListener('click', () => { clearTimeout(timer); loadAndShow(0, 0); if (playing) scheduleNext(); });
+
+btnShuffle.addEventListener('click', () => {
+  shuffled = !shuffled;
+  btnShuffle.classList.toggle('active', shuffled);
+  if (shuffled) shuffleArr(images);
+  else images.sort((a,b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
+  idx = 0; loadAndShow(0, 0); if (playing) scheduleNext();
+});
+
+timingSlider.addEventListener('input', () => {
+  timingVal.textContent = timingSlider.value + 's';
+  if (playing) { clearTimeout(timer); scheduleNext(); }
+});
+
+// ── Shuffle ──
+function shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// ── Fullscreen ──
+fsBtn.addEventListener('click', toggleFS);
+function toggleFS() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }
+}
+document.addEventListener('fullscreenchange', updateFsBtn);
+document.addEventListener('webkitfullscreenchange', updateFsBtn);
+function updateFsBtn() {
+  const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  fsBtn.textContent = inFs ? '⊠' : '⛶';
+}
+
+// ── Auto-hide controls ──
+function showControls() {
+  controls.classList.remove('hidden');
+  fsBtn.classList.remove('hidden');
+  counter.classList.remove('hidden');
+  addMoreBtn.classList.remove('hidden');
+  controlsVisible = true;
+  clearTimeout(hideTimer);
+  if (images.length) hideTimer = setTimeout(hideControls, 3000);
+}
+function hideControls() {
+  controls.classList.add('hidden');
+  fsBtn.classList.add('hidden');
+  counter.classList.add('hidden');
+  addMoreBtn.classList.add('hidden');
+  controlsVisible = false;
+}
+
+document.addEventListener('mousemove', showControls);
+document.addEventListener('touchstart', showControls, { passive: true });
+document.addEventListener('click', e => {
+  if (!controlsVisible && !e.target.closest('#dropzone')) showControls();
+});
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  switch(e.key) {
+    case ' ':      e.preventDefault(); togglePlay(); break;
+    case 'ArrowLeft':  clearTimeout(timer); advance(-1); if (playing) scheduleNext(); break;
+    case 'ArrowRight': clearTimeout(timer); advance(1); break;
+    case 'f': case 'F': toggleFS(); break;
+    case 's': case 'S': btnShuffle.click(); break;
+    case 'Escape': if (document.fullscreenElement || document.webkitFullscreenElement)
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document); break;
+  }
+});
+  // ── Service Worker ──
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () =>
+      navigator.serviceWorker.register("./sw.js").catch(() => {})
+    );
+  }
+</script>
+</body>
+</html>
