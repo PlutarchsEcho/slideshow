@@ -12,12 +12,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #000;
-  color: #fff;
+  background: #000; color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  overflow: hidden;
-  height: 100vh; width: 100vw;
-  user-select: none;
+  overflow: hidden; height: 100vh; width: 100vw; user-select: none;
 }
 
 /* ── Drop zone ── */
@@ -32,7 +29,6 @@ body {
 #dropzone h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.5px; }
 #dropzone p  { color: #666; font-size: 1rem; text-align: center; max-width: 360px; line-height: 1.5; }
 #dropzone .icon { font-size: 4rem; opacity: 0.4; }
-
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 24px; border: none; border-radius: 10px;
@@ -46,29 +42,24 @@ body {
 .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 #folderInput, #photosInput, #addMoreInput, #addPhotosInput { display: none; }
 
-/* ── Stage ── */
+/* ── Stage: canvas fills screen, video hidden (AirPlay sink) ── */
 #stage { position: fixed; inset: 0; background: #000; display: none; }
 
-.slide {
+#render-canvas {
   position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: none;
+  width: 100%; height: 100%;
+  display: block;
 }
-.slide.active { opacity: 1; }
-.slide.fade-in        { animation: fadeIn var(--dur,0.7s) ease forwards; }
-.slide.fade-out       { animation: fadeOut var(--dur,0.7s) ease forwards; }
-.slide.slide-in-left  { animation: slideInLeft var(--dur,0.5s) ease forwards; }
-.slide.slide-out-left { animation: slideOutLeft var(--dur,0.5s) ease forwards; }
 
-@keyframes fadeIn       { from{opacity:0} to{opacity:1} }
-@keyframes fadeOut      { from{opacity:1} to{opacity:0} }
-@keyframes slideInLeft  { from{transform:translateX(100%)} to{transform:translateX(0)} }
-@keyframes slideOutLeft { from{transform:translateX(0)} to{transform:translateX(-100%)} }
-
-.slide img {
-  max-width:100%; max-height:100%;
-  width:100%; height:100%;
-  object-fit:contain; display:block;
+/* The video receives the canvas stream and is the AirPlay source.
+   We keep it invisible on-screen but present in the DOM. */
+#airplay-video {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0; pointer-events: none;
+  /* Must NOT be display:none — needs to be in render tree for AirPlay */
+  x-webkit-airplay: allow;
+  webkit-playsinline: true;
 }
 
 /* ── Progress bar ── */
@@ -96,15 +87,13 @@ body {
   position: fixed; bottom: 100px; left: 0; right: 0;
   height: 72px; z-index: 48;
   transition: opacity 0.4s, transform 0.4s;
-  overflow: hidden;
 }
 #filmstrip-wrap.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
 #filmstrip {
   display: flex; align-items: center; gap: 6px;
   height: 100%; padding: 0 16px;
   overflow-x: auto; overflow-y: hidden;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 #filmstrip::-webkit-scrollbar { display: none; }
@@ -113,8 +102,7 @@ body {
   border-radius: 6px; overflow: hidden; cursor: pointer;
   border: 2px solid transparent;
   transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
-  opacity: 0.55;
-  background: #111;
+  opacity: 0.55; background: #111;
 }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb.active { border-color: #fff; opacity: 1; transform: scale(1.1); }
@@ -129,10 +117,7 @@ body {
   z-index: 50; transition: opacity 0.4s ease;
 }
 #controls.hidden { opacity: 0; pointer-events: none; }
-
-.controls-row {
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-}
+.controls-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .ctrl-btn {
   background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
   width: 48px; height: 48px;
@@ -145,11 +130,7 @@ body {
 .ctrl-btn:active { transform: scale(0.93); }
 .ctrl-btn.active { background: rgba(255,255,255,0.3); }
 .ctrl-btn.large  { width: 58px; height: 58px; font-size: 1.5rem; }
-
-.settings-row {
-  display: flex; align-items: center; justify-content: center;
-  gap: 12px; flex-wrap: wrap;
-}
+.settings-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
 .setting-group {
   display: flex; align-items: center; gap: 8px;
   background: rgba(255,255,255,0.08); backdrop-filter: blur(8px);
@@ -175,25 +156,20 @@ body {
 
 /* ── Top HUD ── */
 #top-hud {
-  position: fixed; top: 0; left: 0; right: 0;
-  padding: 16px;
+  position: fixed; top: 0; left: 0; right: 0; padding: 16px;
   display: flex; align-items: center; justify-content: space-between;
-  z-index: 51; transition: opacity 0.4s;
-  pointer-events: none;
+  z-index: 51; transition: opacity 0.4s; pointer-events: none;
 }
 #top-hud.hidden { opacity: 0; }
 #top-hud > * { pointer-events: all; }
-
 #counter {
   background: rgba(0,0,0,0.45); backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px); border-radius: 20px; padding: 4px 12px;
   font-size: 0.75rem; color: rgba(255,255,255,0.6);
 }
-
-/* top-center add buttons */
 #add-more-wrap {
-  display: flex; gap: 8px; position: absolute;
-  left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+  position: absolute; left: 50%; transform: translateX(-50%);
 }
 #add-more-btn, #add-photos-btn {
   background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
@@ -202,8 +178,6 @@ body {
   font-size: 0.8rem; cursor: pointer; transition: background 0.15s;
 }
 #add-more-btn:hover, #add-photos-btn:hover { background: rgba(255,255,255,0.2); }
-
-/* top-right cluster */
 #top-right { display: flex; gap: 8px; }
 .hud-btn {
   background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
@@ -213,20 +187,19 @@ body {
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: background 0.15s;
 }
-.hud-btn:hover { background: rgba(255,255,255,0.22); }
-.hud-btn.active { background: rgba(255,255,255,0.3); }
+.hud-btn:hover  { background: rgba(255,255,255,0.22); }
+.hud-btn.active { background: rgba(255,255,255,0.35); color: #fff; }
+
+/* AirPlay active indicator */
+#btn-airplay.streaming { background: rgba(0,160,255,0.35); }
 
 /* ── Present mode ── */
-body.present-mode #controls     { opacity: 0 !important; pointer-events: none !important; }
-body.present-mode #top-hud      { opacity: 0 !important; pointer-events: none !important; }
-body.present-mode #filmstrip-wrap{ opacity: 0 !important; pointer-events: none !important; }
-body.present-mode #img-info     { opacity: 0 !important; }
-body.present-mode #progress-bar { opacity: 0; }
-/* tap anywhere to briefly show controls in present mode */
-body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events: all !important; }
-
-/* AirPlay video anchor (hidden, just for picker) */
-#airplay-video { display: none; }
+body.present-mode #controls      { opacity:0!important; pointer-events:none!important; }
+body.present-mode #top-hud       { opacity:0!important; pointer-events:none!important; }
+body.present-mode #filmstrip-wrap{ opacity:0!important; pointer-events:none!important; }
+body.present-mode #img-info      { opacity:0!important; }
+body.present-mode #progress-bar  { opacity:0; }
+body.present-mode.present-peek #top-hud { opacity:1!important; pointer-events:all!important; }
 </style>
 </head>
 <body>
@@ -247,10 +220,11 @@ body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events:
 
 <!-- ══ STAGE ══ -->
 <div id="stage">
-  <div id="slide-a" class="slide"></div>
-  <div id="slide-b" class="slide"></div>
+  <!-- Canvas is what the user sees on-screen -->
+  <canvas id="render-canvas"></canvas>
+  <!-- Video receives the canvas stream — this is the AirPlay source -->
+  <video id="airplay-video" playsinline webkit-playsinline x-webkit-airplay="allow" muted></video>
 </div>
-<video id="airplay-video" src="" x-webkit-airplay="allow" webkit-playsinline playsinline></video>
 
 <!-- ══ PROGRESS ══ -->
 <div id="progress-bar"></div>
@@ -259,20 +233,18 @@ body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events:
 <div id="img-info"></div>
 
 <!-- ══ FILMSTRIP ══ -->
-<div id="filmstrip-wrap">
-  <div id="filmstrip"></div>
-</div>
+<div id="filmstrip-wrap"><div id="filmstrip"></div></div>
 
 <!-- ══ TOP HUD ══ -->
 <div id="top-hud">
   <div id="counter">1 / 1</div>
   <div id="add-more-wrap">
-    <button id="add-more-btn"    onclick="document.getElementById('addMoreInput').click()">+ Folders</button>
-    <button id="add-photos-btn"  onclick="document.getElementById('addPhotosInput').click()">+ Photos</button>
+    <button id="add-more-btn"   onclick="document.getElementById('addMoreInput').click()">+ Folders</button>
+    <button id="add-photos-btn" onclick="document.getElementById('addPhotosInput').click()">+ Photos</button>
   </div>
   <div id="top-right">
-    <button class="hud-btn" id="btn-airplay" title="AirPlay / Cast">📡</button>
-    <button class="hud-btn" id="btn-present" title="Present mode (P)">▶︎</button>
+    <button class="hud-btn" id="btn-airplay" title="AirPlay to TV">📡</button>
+    <button class="hud-btn" id="btn-present" title="Present Mode (P)">▶︎</button>
     <button class="hud-btn" id="fs-btn"      title="Fullscreen (F)">⛶</button>
   </div>
 </div>
@@ -297,33 +269,36 @@ body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events:
     </div>
   </div>
   <div class="controls-row">
-    <button class="ctrl-btn" id="btn-shuffle"  title="Shuffle (S)">🔀</button>
-    <button class="ctrl-btn" id="btn-prev"     title="Prev (←)">◀</button>
+    <button class="ctrl-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
+    <button class="ctrl-btn" id="btn-prev"    title="Prev (←)">◀</button>
     <button class="ctrl-btn large" id="btn-play" title="Play/Pause (Space)">⏸</button>
-    <button class="ctrl-btn" id="btn-next"     title="Next (→)">▶</button>
-    <button class="ctrl-btn" id="btn-restart"  title="Restart">↩</button>
+    <button class="ctrl-btn" id="btn-next"    title="Next (→)">▶</button>
+    <button class="ctrl-btn" id="btn-restart" title="Restart">↩</button>
   </div>
 </div>
 
 <script>
 const SUPPORTED = /\.(jpe?g|png|gif|webp|heic|heif|avif|tiff?|bmp|svg)$/i;
-let images = [], idx = 0, playing = true, shuffled = false;
-let timer = null, hideTimer = null, controlsVisible = true;
-let presentMode = false, peekTimer = null;
-let currentSlot = 'a';
+let images=[], idx=0, playing=true, shuffled=false;
+let timer=null, hideTimer=null, controlsVisible=true;
+let presentMode=false, peekTimer=null;
+let transitioning=false;
 
-// DOM
+// Canvas renderer state
+let canvasW=0, canvasH=0;
+let imgA=null, imgB=null; // loaded HTMLImageElement objects
+
 const dropzone      = document.getElementById('dropzone');
 const stage         = document.getElementById('stage');
-const slideA        = document.getElementById('slide-a');
-const slideB        = document.getElementById('slide-b');
+const canvas        = document.getElementById('render-canvas');
+const ctx           = canvas.getContext('2d');
+const airplayVideo  = document.getElementById('airplay-video');
 const progressBar   = document.getElementById('progress-bar');
 const imgInfo       = document.getElementById('img-info');
 const filmstripWrap = document.getElementById('filmstrip-wrap');
 const filmstrip     = document.getElementById('filmstrip');
 const topHud        = document.getElementById('top-hud');
 const counter       = document.getElementById('counter');
-const addMoreWrap   = document.getElementById('add-more-wrap');
 const controls      = document.getElementById('controls');
 const btnPlay       = document.getElementById('btn-play');
 const btnPrev       = document.getElementById('btn-prev');
@@ -336,30 +311,105 @@ const fsBtn         = document.getElementById('fs-btn');
 const timingSlider  = document.getElementById('timing');
 const timingVal     = document.getElementById('timing-val');
 const transSelect   = document.getElementById('transition');
-const airplayVideo  = document.getElementById('airplay-video');
+</script><script>
+// ── Canvas sizing ──
+function resizeCanvas() {
+  canvasW = window.innerWidth;
+  canvasH = window.innerHeight;
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  if (imgA) drawStill(imgA);
+}
+window.addEventListener('resize', resizeCanvas);
 
-// Inputs
+// ── Canvas stream -> AirPlay video ──
+let streamStarted = false;
+function ensureStream() {
+  if (streamStarted) return;
+  try {
+    const stream = canvas.captureStream(30);
+    airplayVideo.srcObject = stream;
+    airplayVideo.play().catch(()=>{});
+    streamStarted = true;
+  } catch(e) { console.warn('captureStream not supported:', e); }
+}
+
+// ── Draw helpers ──
+function drawContain(img, alpha) {
+  ctx.globalAlpha = alpha;
+  const scale = Math.min(canvasW / img.width, canvasH / img.height);
+  const w = img.width  * scale;
+  const h = img.height * scale;
+  const x = (canvasW - w) / 2;
+  const y = (canvasH - h) / 2;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+  ctx.drawImage(img, x, y, w, h);
+  ctx.globalAlpha = 1;
+}
+
+function drawStill(img) {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  drawContain(img, 1);
+}
+
+// Animate a transition between imgA (outgoing) and imgB (incoming)
+function animateTransition(type, duration, done) {
+  const start = performance.now();
+  transitioning = true;
+  function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // ease in-out quad
+    ctx.clearRect(0, 0, canvasW, canvasH);
+    if (type === 'fade') {
+      if (imgA) drawContain(imgA, 1 - ease);
+      if (imgB) drawContain(imgB, ease);
+    } else if (type === 'slide') {
+      // imgA slides out left, imgB slides in from right
+      const offsetA = -ease * canvasW;
+      const offsetB = (1 - ease) * canvasW;
+      if (imgA) {
+        const sA = Math.min(canvasW/imgA.width, canvasH/imgA.height);
+        const wA = imgA.width*sA, hA = imgA.height*sA;
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,canvasW,canvasH);
+        ctx.drawImage(imgA, offsetA+(canvasW-wA)/2, (canvasH-hA)/2, wA, hA);
+      }
+      if (imgB) {
+        const sB = Math.min(canvasW/imgB.width, canvasH/imgB.height);
+        const wB = imgB.width*sB, hB = imgB.height*sB;
+        ctx.drawImage(imgB, offsetB+(canvasW-wB)/2, (canvasH-hB)/2, wB, hB);
+      }
+    } else {
+      if (imgB) drawContain(imgB, 1);
+    }
+    if (t < 1) { requestAnimationFrame(frame); }
+    else { transitioning=false; if(imgB) drawStill(imgB); done(); }
+  }
+  requestAnimationFrame(frame);
+}
+</script><script>
+// ── File loading ──
 ['folderInput','photosInput','addMoreInput','addPhotosInput'].forEach(id => {
   document.getElementById(id).addEventListener('change', e => loadFiles(e.target.files));
 });
 
-// ── File loading ──
 function loadFiles(fileList) {
   const newImgs = [];
   for (const f of fileList) {
     if (!SUPPORTED.test(f.name)) continue;
     const parts = f.webkitRelativePath ? f.webkitRelativePath.split('/') : [f.name];
-    const folder = parts.length > 1 ? parts[parts.length - 2] : '—';
-    newImgs.push({ file: f, name: f.name, folder, url: null, thumb: null });
+    const folder = parts.length > 1 ? parts[parts.length-2] : '—';
+    newImgs.push({ file:f, name:f.name, folder, url:null });
   }
   if (!newImgs.length) return;
   images = images.concat(newImgs);
   if (shuffled) shuffleArr(images);
   buildFilmstrip();
-  startShow();
+  if (stage.style.display !== 'block') startShow();
+  else updateHUD();
 }
 
-// ── Drag & drop ──
+// Drag & drop
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
 dropzone.addEventListener('drop', e => {
@@ -369,8 +419,8 @@ dropzone.addEventListener('drop', e => {
   const tryStart = () => { if (!pending) loadFiles(files); };
   for (const item of items) {
     const entry = item.webkitGetAsEntry?.();
-    if (entry?.isDirectory) { pending++; readDir(entry, files, () => { pending--; tryStart(); }); }
-    else if (item.kind === 'file') { const f = item.getAsFile(); if (f) files.push(f); }
+    if (entry?.isDirectory) { pending++; readDir(entry, files, ()=>{ pending--; tryStart(); }); }
+    else if (item.kind==='file') { const f=item.getAsFile(); if(f) files.push(f); }
   }
   tryStart();
 });
@@ -386,55 +436,14 @@ function readDir(dir, out, done) {
     if (!all.length) { done(); return; }
     let p = all.length;
     all.forEach(e => {
-      if (e.isFile)      e.file(f => { out.push(f); if (!--p) done(); });
+      if (e.isFile) e.file(f => { out.push(f); if (!--p) done(); });
       else if (e.isDirectory) readDir(e, out, () => { if (!--p) done(); });
       else if (!--p) done();
     });
   }
 }
 
-// ── Filmstrip ──
-function buildFilmstrip() {
-  filmstrip.innerHTML = '';
-  images.forEach((img, i) => {
-    const div = document.createElement('div');
-    div.className = 'thumb' + (i === idx ? ' active' : '');
-    div.dataset.idx = i;
-    const el = document.createElement('img');
-    el.alt = img.name;
-    // lazy-load thumb
-    getUrl(i, url => { el.src = url; });
-    div.appendChild(el);
-    div.addEventListener('click', () => {
-      clearTimeout(timer);
-      loadAndShow(i, 1);
-      if (playing) scheduleNext();
-    });
-    filmstrip.appendChild(div);
-  });
-}
-
-function updateFilmstrip() {
-  const thumbs = filmstrip.querySelectorAll('.thumb');
-  thumbs.forEach((t, i) => t.classList.toggle('active', i === idx));
-  // scroll active thumb into view
-  if (thumbs[idx]) {
-    thumbs[idx].scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
-  }
-}
-
-// ── Show ──
-function startShow() {
-  dropzone.style.display = 'none';
-  stage.style.display = 'block';
-  if (images.length === 1 || idx >= images.length) idx = 0;
-  loadAndShow(idx, 1);
-  if (playing) scheduleNext();
-}
-
-function getSlide(s)  { return s === 'a' ? slideA : slideB; }
-function otherSlot(s) { return s === 'a' ? 'b' : 'a'; }
-
+// Get data URL for image
 function getUrl(i, cb) {
   if (images[i].url) { cb(images[i].url); return; }
   const r = new FileReader();
@@ -442,42 +451,78 @@ function getUrl(i, cb) {
   r.readAsDataURL(images[i].file);
 }
 
-function loadAndShow(newIdx, dir) {
-  if (!images.length) return;
-  const img = images[newIdx];
-  const transition = transSelect.value;
-  getUrl(newIdx, url => {
-    const nextSlot  = otherSlot(currentSlot);
-    const nextSlide = getSlide(nextSlot);
-    const currSlide = getSlide(currentSlot);
-    nextSlide.innerHTML = '';
+// Load an HTMLImageElement from index
+function loadImg(i, cb) {
+  getUrl(i, url => {
+    const el = new Image();
+    el.onload = () => cb(el);
+    el.src = url;
+  });
+}
+</script><script>
+// ── Filmstrip ──
+function buildFilmstrip() {
+  filmstrip.innerHTML = '';
+  images.forEach((img, i) => {
+    const div = document.createElement('div');
+    div.className = 'thumb' + (i===idx ? ' active' : '');
+    div.dataset.idx = i;
     const el = document.createElement('img');
-    el.src = url; el.alt = img.name;
-    nextSlide.appendChild(el);
+    el.alt = img.name;
+    getUrl(i, url => { el.src = url; });
+    div.appendChild(el);
+    div.addEventListener('click', () => {
+      clearTimeout(timer);
+      showSlide(i, 1);
+      if (playing) scheduleNext();
+    });
+    filmstrip.appendChild(div);
+  });
+}
 
-    const dur = transition === 'none' ? 0 : transition === 'fade' ? 700 : 500;
-    document.documentElement.style.setProperty('--dur', dur + 'ms');
+function updateFilmstrip() {
+  filmstrip.querySelectorAll('.thumb').forEach((t,i) =>
+    t.classList.toggle('active', i===idx));
+  const active = filmstrip.querySelector('.thumb.active');
+  if (active) active.scrollIntoView({ inline:'center', behavior:'smooth', block:'nearest' });
+}
 
-    if (transition === 'fade') {
-      currSlide.classList.remove('active');
-      nextSlide.classList.add('active','fade-in');
-      setTimeout(() => { currSlide.innerHTML=''; nextSlide.classList.remove('fade-in'); currentSlot=nextSlot; }, dur);
-    } else if (transition === 'slide') {
-      nextSlide.classList.add('active','slide-in-left');
-      currSlide.classList.add('slide-out-left');
-      setTimeout(() => { currSlide.classList.remove('active','slide-out-left'); nextSlide.classList.remove('slide-in-left'); currSlide.innerHTML=''; currentSlot=nextSlot; }, dur);
-    } else {
-      currSlide.classList.remove('active'); currSlide.innerHTML='';
-      nextSlide.classList.add('active'); currentSlot = nextSlot;
-    }
+// ── Show / transitions ──
+function startShow() {
+  resizeCanvas();
+  ensureStream();
+  dropzone.style.display = 'none';
+  stage.style.display = 'block';
+  idx = 0;
+  loadImg(idx, img => { imgA = img; drawStill(imgA); });
+  updateHUD(); updateFilmstrip();
+  if (playing) scheduleNext();
+}
 
+function showSlide(newIdx, dir) {
+  if (transitioning) return;
+  const type = transSelect.value;
+  const dur  = type==='none' ? 0 : type==='fade' ? 700 : 500;
+  const prev = imgA;
+
+  loadImg(newIdx, incoming => {
+    imgB = incoming;
     // preload next
     const pre = (newIdx+1) % images.length;
-    if (pre !== newIdx) getUrl(pre, () => {});
+    if (pre !== newIdx) getUrl(pre, ()=>{});
 
     idx = newIdx;
-    updateHUD();
-    updateFilmstrip();
+    updateHUD(); updateFilmstrip();
+
+    if (dur === 0) {
+      imgA = imgB; imgB = null;
+      drawStill(imgA);
+    } else {
+      imgA = prev;
+      animateTransition(type, dur, () => {
+        imgA = imgB; imgB = null;
+      });
+    }
   });
 }
 
@@ -486,17 +531,17 @@ function updateHUD() {
   imgInfo.textContent = img ? `${img.folder}  /  ${img.name}` : '';
   counter.textContent = `${idx+1} / ${images.length}`;
   progressBar.style.width = images.length > 1
-    ? ((idx / (images.length-1)) * 100) + '%' : '100%';
+    ? ((idx/(images.length-1))*100)+'%' : '100%';
 }
 
 // ── Playback ──
 function scheduleNext() {
   clearTimeout(timer);
-  timer = setTimeout(() => advance(1), parseInt(timingSlider.value) * 1000);
+  timer = setTimeout(() => advance(1), parseInt(timingSlider.value)*1000);
 }
 function advance(dir) {
   if (!images.length) return;
-  loadAndShow((idx + dir + images.length) % images.length, dir);
+  showSlide((idx+dir+images.length)%images.length, dir);
   if (playing) scheduleNext();
 }
 function togglePlay() {
@@ -504,58 +549,68 @@ function togglePlay() {
   btnPlay.textContent = playing ? '⏸' : '▶';
   if (playing) scheduleNext(); else clearTimeout(timer);
 }
-
 btnPlay.addEventListener('click', togglePlay);
-btnPrev.addEventListener('click', () => { clearTimeout(timer); advance(-1); });
-btnNext.addEventListener('click', () => { clearTimeout(timer); advance(1); });
-btnRestart.addEventListener('click', () => { clearTimeout(timer); loadAndShow(0,1); if(playing) scheduleNext(); });
-btnShuffle.addEventListener('click', () => {
+btnPrev.addEventListener('click', ()=>{ clearTimeout(timer); advance(-1); });
+btnNext.addEventListener('click', ()=>{ clearTimeout(timer); advance(1); });
+btnRestart.addEventListener('click', ()=>{ clearTimeout(timer); showSlide(0,1); if(playing) scheduleNext(); });
+btnShuffle.addEventListener('click', ()=>{
   shuffled = !shuffled;
   btnShuffle.classList.toggle('active', shuffled);
   if (shuffled) shuffleArr(images);
-  else images.sort((a,b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
-  buildFilmstrip(); loadAndShow(0,1); if(playing) scheduleNext();
+  else images.sort((a,b)=>a.folder.localeCompare(b.folder)||a.name.localeCompare(b.name));
+  buildFilmstrip(); showSlide(0,1); if(playing) scheduleNext();
 });
-timingSlider.addEventListener('input', () => {
-  timingVal.textContent = timingSlider.value + 's';
+timingSlider.addEventListener('input', ()=>{
+  timingVal.textContent = timingSlider.value+'s';
   if (playing) { clearTimeout(timer); scheduleNext(); }
 });
-
 function shuffleArr(arr) {
   for (let i=arr.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]] = [arr[j],arr[i]];
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
   }
 }
-
+</script><script>
 // ── Fullscreen ──
 fsBtn.addEventListener('click', toggleFS);
 function toggleFS() {
   const el = document.documentElement;
   if (!document.fullscreenElement && !document.webkitFullscreenElement)
-    (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    (el.requestFullscreen||el.webkitRequestFullscreen).call(el);
   else
-    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    (document.exitFullscreen||document.webkitExitFullscreen).call(document);
 }
 function updateFsBtn() {
-  fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '⊠' : '⛶';
+  fsBtn.textContent = (document.fullscreenElement||document.webkitFullscreenElement) ? '⊠' : '⛶';
 }
 document.addEventListener('fullscreenchange', updateFsBtn);
 document.addEventListener('webkitfullscreenchange', updateFsBtn);
 
 // ── AirPlay ──
+// The video has the canvas stream as its source.
+// webkitShowPlaybackTargetPicker opens the AirPlay picker.
+// When the user picks a target, the video (= canvas stream) plays on TV.
 btnAirplay.addEventListener('click', () => {
-  // Try native AirPlay picker on WebKit
+  ensureStream(); // make sure stream is attached
   if (airplayVideo.webkitShowPlaybackTargetPicker) {
     airplayVideo.webkitShowPlaybackTargetPicker();
   } else {
-    // Fallback: go fullscreen (best we can do on non-WebKit)
+    // Non-WebKit fallback: fullscreen
     toggleFS();
+    alert('AirPlay requires Safari. Use the browser\'s built-in mirroring for other browsers.');
   }
 });
+
+// Listen for AirPlay availability/connection
 if (window.WebKitPlaybackTargetAvailabilityEvent) {
   airplayVideo.addEventListener('webkitplaybacktargetavailabilitychanged', e => {
+    btnAirplay.style.display = e.availability === 'not-available' ? 'none' : 'flex';
     btnAirplay.classList.toggle('active', e.availability === 'available');
+  });
+  airplayVideo.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', () => {
+    const streaming = airplayVideo.webkitCurrentPlaybackTargetIsWireless;
+    btnAirplay.classList.toggle('streaming', streaming);
+    btnAirplay.title = streaming ? 'Streaming to AirPlay ✓ (tap to change)' : 'AirPlay to TV';
   });
 }
 
@@ -567,64 +622,59 @@ function togglePresent() {
   btnPresent.classList.toggle('active', presentMode);
   btnPresent.title = presentMode ? 'Exit Present Mode (P)' : 'Present Mode (P)';
   if (presentMode) {
-    // also go fullscreen
     const el = document.documentElement;
     if (!document.fullscreenElement && !document.webkitFullscreenElement)
-      (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{});
+      (el.requestFullscreen||el.webkitRequestFullscreen).call(el).catch(()=>{});
   }
 }
-
-// Tap in present mode → brief peek at controls
 stage.addEventListener('click', e => {
   if (!presentMode) return;
-  if (e.target.closest('#controls') || e.target.closest('#top-hud')) return;
+  if (e.target.closest('#controls')||e.target.closest('#top-hud')) return;
   document.body.classList.add('present-peek');
   clearTimeout(peekTimer);
-  peekTimer = setTimeout(() => document.body.classList.remove('present-peek'), 2500);
+  peekTimer = setTimeout(()=>document.body.classList.remove('present-peek'), 2500);
 });
 
 // ── Auto-hide controls ──
 const hudEls = [controls, topHud, filmstripWrap, imgInfo];
 function showControls() {
   if (presentMode) return;
-  hudEls.forEach(el => el.classList.remove('hidden'));
+  hudEls.forEach(el=>el.classList.remove('hidden'));
   controlsVisible = true;
   clearTimeout(hideTimer);
   if (images.length) hideTimer = setTimeout(hideControls, 3000);
 }
 function hideControls() {
-  hudEls.forEach(el => el.classList.add('hidden'));
+  hudEls.forEach(el=>el.classList.add('hidden'));
   controlsVisible = false;
 }
-
 document.addEventListener('mousemove', showControls);
-document.addEventListener('touchstart', showControls, { passive: true });
+document.addEventListener('touchstart', showControls, {passive:true});
 document.addEventListener('click', e => {
   if (!controlsVisible && !presentMode && !e.target.closest('#dropzone')) showControls();
 });
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
   switch(e.key) {
-    case ' ':         e.preventDefault(); togglePlay(); break;
-    case 'ArrowLeft': clearTimeout(timer); advance(-1); break;
-    case 'ArrowRight':clearTimeout(timer); advance(1); break;
+    case ' ':          e.preventDefault(); togglePlay(); break;
+    case 'ArrowLeft':  clearTimeout(timer); advance(-1); break;
+    case 'ArrowRight': clearTimeout(timer); advance(1); break;
     case 'f': case 'F': toggleFS(); break;
     case 's': case 'S': btnShuffle.click(); break;
     case 'p': case 'P': togglePresent(); break;
     case 'Escape':
-      if (presentMode) { togglePresent(); }
-      else if (document.fullscreenElement || document.webkitFullscreenElement)
-        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      if (presentMode) togglePresent();
+      else if (document.fullscreenElement||document.webkitFullscreenElement)
+        (document.exitFullscreen||document.webkitExitFullscreen).call(document);
       break;
   }
 });
 
 // ── Service Worker ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
+if ('serviceWorker' in navigator)
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
