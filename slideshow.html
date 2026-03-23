@@ -1,119 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#000000">
-<title>Slideshow Controller</title>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; height: 100vh; width: 100vw; user-select: none; }
-#dropzone { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; background: #0a0a0a; z-index: 100; transition: background 0.2s; }
-#dropzone.drag-over { background: #111820; }
-#dropzone h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.5px; }
-#dropzone p { color: #666; font-size: 1rem; text-align: center; max-width: 360px; line-height: 1.5; }
-#dropzone .icon { font-size: 4rem; opacity: 0.4; }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s; }
-.btn:active { transform: scale(0.97); }
-.btn-primary { background: #fff; color: #000; }
-.btn-secondary { background: #1e1e1e; color: #fff; border: 1px solid #333; }
-.btn:hover { opacity: 0.85; }
-.btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-#folderInput, #photosInput { display: none; }
-#stage { position: fixed; inset: 0; background: #000; display: none; }
-#stage-content { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-#stage-content img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; display: block; }
-#progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: rgba(255,255,255,0.85); width: 0%; z-index: 50; transition: width 0.3s linear; box-shadow: 0 0 6px rgba(255,255,255,0.5); }
-#img-info { position: fixed; bottom: 172px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); border-radius: 8px; padding: 6px 14px; font-size: 0.78rem; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80vw; text-align: center; pointer-events: none; z-index: 40; transition: opacity 0.4s; }
-#img-info.hidden { opacity: 0; }
-#filmstrip-wrap { position: fixed; bottom: 100px; left: 0; right: 0; height: 72px; z-index: 48; transition: opacity 0.4s, transform 0.4s; }
-#filmstrip-wrap.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
-#filmstrip { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 16px; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; scrollbar-width: none; }
-#filmstrip::-webkit-scrollbar { display: none; }
-.thumb { flex-shrink: 0; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s, opacity 0.2s; opacity: 0.55; background: #111; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb.active { border-color: #fff; opacity: 1; transform: scale(1.1); }
-.thumb:hover { opacity: 0.85; }
-#controls { position: fixed; bottom: 0; left: 0; right: 0; padding: 8px 20px 24px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; flex-direction: column; gap: 10px; z-index: 50; transition: opacity 0.4s ease; }
-#controls.hidden { opacity: 0; pointer-events: none; }
-.controls-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
-.ctrl-btn { background: rgba(255,255,255,0.12); border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 1.2rem; backdrop-filter: blur(8px); transition: background 0.15s, transform 0.1s, box-shadow 0.2s; }
-.ctrl-btn:hover { background: rgba(255,255,255,0.22); }
-.ctrl-btn:active { transform: scale(0.93); }
-.ctrl-btn.active { background: rgba(255,255,255,0.3); }
-.ctrl-btn.large { width: 58px; height: 58px; font-size: 1.5rem; }
-.ctrl-btn.live { background: rgba(0,200,100,0.4) !important; box-shadow: 0 0 12px rgba(0,200,100,0.5); }
-.settings-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
-.setting-group { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); border-radius: 20px; padding: 6px 14px; }
-.setting-group label { font-size: 0.75rem; color: rgba(255,255,255,0.65); white-space: nowrap; }
-.setting-group input[type=range] { -webkit-appearance: none; appearance: none; width: 90px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; outline: none; }
-.setting-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; cursor: pointer; }
-.setting-group select { background: transparent; border: none; color: #fff; font-size: 0.8rem; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; padding-right: 4px; }
-.setting-group select option { background: #111; color: #fff; }
-#timing-val { font-size: 0.8rem; color: #fff; min-width: 28px; }
-#top-hud { position: fixed; top: 0; left: 0; right: 0; padding: 16px; display: flex; align-items: center; justify-content: space-between; z-index: 51; transition: opacity 0.4s; pointer-events: none; }
-#top-hud.hidden { opacity: 0; }
-#top-hud > * { pointer-events: all; }
-#counter { background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; color: rgba(255,255,255,0.6); }
-#top-right { display: flex; gap: 8px; }
-.hud-btn { background: rgba(255,255,255,0.12); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 1rem; backdrop-filter: blur(8px); transition: background 0.15s, box-shadow 0.2s; }
-.hud-btn:hover { background: rgba(255,255,255,0.22); }
-.hud-btn.live { background: rgba(0,200,100,0.4) !important; box-shadow: 0 0 12px rgba(0,200,100,0.5); }
-#display-status { position: fixed; top: 70px; right: 16px; background: rgba(0,200,100,0.3); backdrop-filter: blur(8px); border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; color: #fff; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 52; }
-#display-status.visible { opacity: 1; }
-body.present-mode #stage { opacity: 0.2; }
-body.present-mode #controls, body.present-mode #top-hud, body.present-mode #filmstrip-wrap { opacity: 0 !important; pointer-events: none !important; }
-body.present-mode #img-info, body.present-mode #progress-bar { opacity: 0; }
-body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events: all !important; }
-</style>
 </head>
 <body>
 <div id="dropzone">
-  <div class="icon">&#128247;</div>
+  <div class="icon">🖼️</div>
   <h1>Slideshow</h1>
-  <p>Drop images or folders here<br>or click to browse</p>
+  <p>Drop images or folders here, or click to browse</p>
   <div class="btn-row">
-    <button class="btn btn-primary" onclick="folderInput.click()">&#128193; Folder</button>
-    <button class="btn btn-secondary" onclick="photosInput.click()">&#128444; Photos</button>
+    <button class="btn btn-primary" onclick="folderInput.click()">📁 Folder</button>
+    <button class="btn btn-secondary" onclick="photosInput.click()">🖼️ Photos</button>
   </div>
   <input type="file" id="folderInput" webkitdirectory directory multiple onchange="handleFiles(this.files)">
   <input type="file" id="photosInput" multiple accept="image/*" onchange="handleFiles(this.files)">
 </div>
-<div id="stage">
-  <div id="stage-content"><img id="main-img" src="" alt=""></div>
+
+<div id="stage" style="display:none;">
+  <div id="stage-content">
+    <img id="main-img" src="" alt="" style="position:absolute;opacity:1;transition:opacity 0.5s ease;">
+    <img id="offscreen-img" src="" alt="" style="position:absolute;opacity:0;transition:opacity 0.5s ease;">
+  </div>
   <div id="progress-bar"></div>
-  <div id="img-info"></div>
+  <div id="img-info">--</div>
 </div>
-<div id="filmstrip-wrap">
-  <div id="filmstrip"></div>
-</div>
+
+<div id="filmstrip-wrap" style="display:none;"><div id="filmstrip"></div></div>
+
 <div id="top-hud" class="hidden">
   <div id="counter">0 / 0</div>
+  <div id="add-more-wrap">
+    <button id="add-more-btn" onclick="addMoreInput.click()">+ Add Folder</button>
+    <button id="add-photos-btn" onclick="addPhotosInput.click()">+ Add Photos</button>
+  </div>
   <div id="top-right">
-    <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">&#128256;</button>
-    <button class="hud-btn" id="btn-airplay" title="AirPlay">&#128225;</button>
-    <button class="hud-btn" id="btn-present" title="Open Display for TV (P)">&#128250;</button>
-    <button class="hud-btn" id="btn-fullscreen" title="Fullscreen (F)">&#9974;</button>
+    <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
+    <button class="hud-btn" id="btn-airplay" title="AirPlay">📡</button>
+    <button class="hud-btn" id="btn-present" title="Open Display (P)">📺</button>
+    <button class="hud-btn" id="btn-fullscreen" title="Fullscreen (F)">⛶</button>
   </div>
 </div>
-<div id="display-status">&#128250; Display Connected</div>
+
+<input type="file" id="addMoreInput" webkitdirectory directory multiple onchange="handleFiles(this.files)" style="display:none;">
+<input type="file" id="addPhotosInput" multiple accept="image/*" onchange="handleFiles(this.files)" style="display:none;">
+
 <div id="controls" class="hidden">
   <div class="controls-row">
-    <button class="ctrl-btn" id="btn-prev" title="Previous (left arrow)">&#9664;</button>
-    <button class="ctrl-btn large" id="btn-play" title="Play/Pause (Space)">&#9654;</button>
-    <button class="ctrl-btn" id="btn-next" title="Next (right arrow)">&#9654;</button>
+    <button class="ctrl-btn" id="btn-prev-control" title="Previous">◀</button>
+    <button class="ctrl-btn large" id="btn-play-control" title="Play/Pause">⏸</button>
+    <button class="ctrl-btn" id="btn-next-control" title="Next">▶</button>
   </div>
   <div class="settings-row">
     <div class="setting-group">
       <label>Timing</label>
-      <input type="range" id="timing" min="1" max="60" value="5">
-      <span id="timing-val">5s</span>
+      <input type="range" id="timing-control" min="1" max="60" value="5">
+      <span id="timing-val-control">5s</span>
     </div>
     <div class="setting-group">
       <label>Transition</label>
-      <select id="transition">
+      <select id="transition-control">
         <option value="fade">Fade</option>
         <option value="slide">Slide</option>
         <option value="none">None</option>
@@ -121,52 +62,279 @@ body.present-mode.present-peek #top-hud { opacity: 1 !important; pointer-events:
     </div>
   </div>
 </div>
+
 <script>
-let images=[],currentIndex=0,isPlaying=false,isShuffled=false;
-let playInterval=null,timing=5,transition="fade";
-let displayWindow=null,displayReady=false,channel=null;
-let originalOrder=[],isPresentMode=false;
-const dropzone=document.getElementById("dropzone"),stage=document.getElementById("stage");
-const mainImg=document.getElementById("main-img"),filmstrip=document.getElementById("filmstrip");
-const controls=document.getElementById("controls"),topHud=document.getElementById("top-hud");
-const counter=document.getElementById("counter"),progressBar=document.getElementById("progress-bar");
-const imgInfo=document.getElementById("img-info"),displayStatus=document.getElementById("display-status");
-const btnPresent=document.getElementById("btn-present"),btnPlay=document.getElementById("btn-play");
-const btnShuffle=document.getElementById("btn-shuffle"),btnAirplay=document.getElementById("btn-airplay");
-const btnFullscreen=document.getElementById("btn-fullscreen");
-const btnPrev=document.getElementById("btn-prev"),btnNext=document.getElementById("btn-next");
-const timingInput=document.getElementById("timing"),timingVal=document.getElementById("timing-val");
-const transitionSelect=document.getElementById("transition");
-try{channel=new BroadcastChannel("slideshow");channel.onmessage=({data})=>{if(data.cmd==="ready"){displayReady=true;updateDisplayStatus();syncToDisplay();}};}catch(e){console.log("BroadcastChannel not supported");}
-dropzone.addEventListener("dragover",(e)=>{e.preventDefault();dropzone.classList.add("drag-over");});
-dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("drag-over"));
-dropzone.addEventListener("drop",(e)=>{e.preventDefault();dropzone.classList.remove("drag-over");const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith("image/"));if(files.length)addImages(files);});
-function addImages(files){files.forEach(file=>images.push({url:URL.createObjectURL(file),name:file.name}));originalOrder=[...images];if(images.length===files.length){dropzone.style.display="none";stage.style.display="block";controls.classList.remove("hidden");topHud.classList.remove("hidden");updateFilmstrip();showImage(0);}else{updateFilmstrip();}updateCounter();}
-function updateFilmstrip(){filmstrip.innerHTML=images.map((img,i)=>`<div class="thumb ${i===currentIndex?"active":""}" data-index="${i}"><img src="${img.url}" alt=""></div>`).join("");filmstrip.querySelectorAll(".thumb").forEach(thumb=>thumb.onclick=()=>showImage(parseInt(thumb.dataset.index)));const active=filmstrip.querySelector(".thumb.active");if(active)active.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});}
-function showImage(index){if(!images.length)return;currentIndex=(index+images.length)%images.length;mainImg.src=images[currentIndex].url;imgInfo.textContent=images[currentIndex].name;updateCounter();updateFilmstrip();updateProgress();syncToDisplay();}
-function updateCounter(){counter.textContent=images.length?`${currentIndex+1} / ${images.length}`:"0 / 0";}
-function updateProgress(){progressBar.style.width=images.length?`${((currentIndex+1)/images.length*100)}%`:"0%";}
-function togglePlay(){isPlaying=!isPlaying;btnPlay.innerHTML=isPlaying?"&#9208;":"&#9654;";if(isPlaying){playInterval=setInterval(()=>{nextImage();},timing*1000);}else{clearInterval(playInterval);}}
-function nextImage(){showImage(currentIndex+1);}
-function prevImage(){showImage(currentIndex-1);}
-function toggleShuffle(){isShuffled=!isShuffled;btnShuffle.classList.toggle("active",isShuffled);if(isShuffled){images=[...images].sort(()=>Math.random()-0.5);}else{images=[...originalOrder];}updateFilmstrip();showImage(0);}
-function updateDisplayStatus(){if(displayReady&&displayWindow&&!displayWindow.closed){displayStatus.classList.add("visible");btnPresent.classList.add("live");}else{displayStatus.classList.remove("visible");btnPresent.classList.remove("live");displayReady=false;}}
-function openDisplayWindow(){if(displayWindow&&!displayWindow.closed){displayWindow.focus();return;}const features="popup,width=screen.width,height=screen.height,menubar=no,toolbar=no,location=no,status=no";displayWindow=window.open("display.html","slideshow-display",features);if(!displayWindow||displayWindow.closed){alert("Display window blocked by popup blocker.\n\nPlease:\n1. Allow popups for this site\n2. Tap Present again\n\nOr manually open display.html in a new tab.");return;}updateDisplayStatus();setTimeout(()=>{if(displayWindow&&displayWindow.document&&displayWindow.document.documentElement){displayWindow.document.documentElement.requestFullscreen?.().catch(()=>{});}},500);const checkInterval=setInterval(()=>{if(!displayWindow||displayWindow.closed){clearInterval(checkInterval);displayReady=false;updateDisplayStatus();}},1000);}
-function syncToDisplay(){if(channel&&displayReady&&images.length>0){const currentImage=images[currentIndex];channel.postMessage({cmd:"show",url:currentImage.url,transition:transition});}}
-function togglePresentMode(){isPresentMode=!isPresentMode;document.body.classList.toggle("present-mode",isPresentMode);if(isPresentMode)openDisplayWindow();}
-function toggleFullscreen(){if(!document.fullscreenElement){document.documentElement.requestFullscreen();}else{document.exitFullscreen();}}
-function tryAirPlay(){if(typeof webkitShowPlaybackTargetPicker!=="undefined"){webkitShowPlaybackTargetPicker();}else{alert("AirPlay: On iOS, use the system AirPlay button from Control Center. On Mac, use the AirPlay menu in the menu bar.");}}
-timingInput.addEventListener("input",()=>{timing=parseInt(timingInput.value);timingVal.textContent=timing+"s";if(isPlaying){clearInterval(playInterval);playInterval=setInterval(()=>{nextImage();},timing*1000);}});
-transitionSelect.addEventListener("change",()=>{transition=transitionSelect.value;});
-btnPlay.addEventListener("click",togglePlay);
-btnPrev.addEventListener("click",prevImage);
-btnNext.addEventListener("click",nextImage);
-btnShuffle.addEventListener("click",toggleShuffle);
-btnPresent.addEventListener("click",togglePresentMode);
-btnFullscreen.addEventListener("click",toggleFullscreen);
-btnAirplay.addEventListener("click",tryAirPlay);
-document.addEventListener("keydown",(e)=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;switch(e.key){case "ArrowRight":nextImage();break;case "ArrowLeft":prevImage();break;case " ":e.preventDefault();togglePlay();break;case "f":case "F":toggleFullscreen();break;case "s":case "S":toggleShuffle();break;case "p":case "P":togglePresentMode();break;case "Escape":if(isPresentMode){isPresentMode=false;document.body.classList.remove("present-mode");}break;}});
-setInterval(updateDisplayStatus,2000);
+let images = [], currentIndex = 0, isPlaying = false, isShuffled = false;
+let playInterval = null, timing = 5, transition = 'fade';
+let displayWindow = null, displayReady = false, channel = null;
+let originalOrder = [], isPresentMode = false;
+
+const dropzone = document.getElementById('dropzone');
+const stage = document.getElementById('stage');
+const mainImg = document.getElementById('main-img');
+const offscreenImg = document.getElementById('offscreen-img');
+const filmstripWrap = document.getElementById('filmstrip-wrap');
+const filmstrip = document.getElementById('filmstrip');
+const topHud = document.getElementById('top-hud');
+const controls = document.getElementById('controls');
+const counter = document.getElementById('counter');
+const progressBar = document.getElementById('progress-bar');
+const imgInfo = document.getElementById('img-info');
+const displayStatus = document.getElementById('display-status');
+const btnPresent = document.getElementById('btn-present');
+const btnPlay = document.getElementById('btn-play-control');
+const btnShuffle = document.getElementById('btn-shuffle');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const btnAirplay = document.getElementById('btn-airplay');
+
+// Setup BroadcastChannel to talk to display window
+try {
+  channel = new BroadcastChannel('slideshow');
+  channel.onmessage = ({data}) => {
+    if (data.cmd === 'ready') {
+      displayReady = true;
+      updateDisplayStatus();
+      syncToDisplay();
+    }
+  };
+} catch(e) {
+  console.log('BroadcastChannel not supported');
+}
+
+// File handling
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('drag-over');
+});
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('drag-over');
+});
+
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) handleFiles(files);
+});
+
+function handleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  
+  files.forEach(file => {
+    images.push({
+      url: URL.createObjectURL(file),
+      name: file.name
+    });
+  });
+  
+  originalOrder = [...images];
+  
+  if (images.length === files.length) {
+    // First batch
+    dropzone.style.display = 'none';
+    stage.style.display = 'block';
+    filmstripWrap.style.display = 'block';
+    topHud.classList.remove('hidden');
+    controls.classList.remove('hidden');
+    showImage(0);
+  }
+  updateFilmstrip();
+  updateCounter();
+}
+
+function showImage(index) {
+  if (!images.length) return;
+  currentIndex = (index + images.length) % images.length;
+  mainImg.src = images[currentIndex].url;
+  imgInfo.textContent = images[currentIndex].name;
+  updateCounter();
+  updateProgress();
+  updateFilmstrip();
+  syncToDisplay();
+}
+
+function updateFilmstrip() {
+  filmstrip.innerHTML = images.map((img, i) => `
+    <div class="thumb ${i === currentIndex ? 'active' : ''}" data-index="${i}">
+      <img src="${img.url}" alt="">
+    </div>
+  `).join('');
+  
+  filmstrip.querySelectorAll('.thumb').forEach(thumb => {
+    thumb.onclick = () => showImage(parseInt(thumb.dataset.index));
+  });
+}
+
+function updateCounter() {
+  counter.textContent = images.length ? `${currentIndex + 1} / ${images.length}` : '0 / 0';
+}
+
+function updateProgress() {
+  progressBar.style.width = images.length ? `${((currentIndex + 1) / images.length * 100)}%` : '0%';
+}
+
+function updateDisplayStatus() {
+  if (displayReady && displayWindow && !displayWindow.closed) {
+    displayStatus.classList.add('visible');
+    btnPresent.classList.add('live');
+  } else {
+    displayStatus.classList.remove('visible');
+    btnPresent.classList.remove('live');
+    displayReady = false;
+  }
+}
+
+function syncToDisplay() {
+  if (channel && displayReady && images.length > 0) {
+    channel.postMessage({
+      cmd: 'show',
+      url: images[currentIndex].url,
+      transition: transition
+    });
+  }
+}
+
+function openDisplayWindow() {
+  if (displayWindow && !displayWindow.closed) {
+    displayWindow.focus();
+    return;
+  }
+  
+  const features = "popup,width=" + screen.width + ",height=" + screen.height + ",menubar=no,toolbar=no,location=no,status=no,scrollbars=no";
+  displayWindow = window.open("display.html", "slideshow-display", features);
+  
+  if (!displayWindow || displayWindow.closed) {
+    alert("Display window blocked by popup blocker.\n\nPlease allow popups for this site and try again.");
+    return;
+  }
+  
+  updateDisplayStatus();
+  
+  // Try to make display go fullscreen
+  setTimeout(() => {
+    if (displayWindow && displayWindow.document && displayWindow.document.documentElement) {
+      displayWindow.document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+  }, 500);
+  
+  // Check if window closes
+  const checkInterval = setInterval(() => {
+    if (!displayWindow || displayWindow.closed) {
+      clearInterval(checkInterval);
+      displayReady = false;
+      updateDisplayStatus();
+    }
+  }, 1000);
+}
+
+function togglePresentMode() {
+  isPresentMode = !isPresentMode;
+  document.body.classList.toggle('present-mode', isPresentMode);
+  if (isPresentMode) {
+    openDisplayWindow();
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
+function tryAirPlay() {
+  // iOS: Show alert about using Control Center
+  alert("To AirPlay to TV:\n\n1. Open Control Center\n2. Tap Screen Mirroring\n3. Select your TV\n\nThe clean display will show on your TV.");
+}
+
+// Button event listeners
+btnPresent.addEventListener('click', openDisplayWindow);
+btnPlay.addEventListener('click', togglePlay);
+btnShuffle.addEventListener('click', () => {
+  isShuffled = !isShuffled;
+  btnShuffle.classList.toggle('active', isShuffled);
+  if (isShuffled) {
+    // Shuffle
+    for (let i = images.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [images[i], images[j]] = [images[j], images[i]];
+    }
+  } else {
+    // Restore original order
+    images = [...originalOrder];
+  }
+  showImage(0);
+});
+btnFullscreen.addEventListener('click', toggleFullscreen);
+btnAirplay.addEventListener('click', tryAirPlay);
+btnPrev.addEventListener('click', () => { showImage(currentIndex - 1); });
+btnNext.addEventListener('click', () => { showImage(currentIndex + 1); });
+
+// Input change handlers
+const folderInput = document.getElementById('folderInput');
+const photosInput = document.getElementById('photosInput');
+const addMoreInput = document.getElementById('addMoreInput');
+const addPhotosInput = document.getElementById('addPhotosInput');
+const timingInput = document.getElementById('timing');
+const transitionSelect = document.getElementById('transition');
+
+folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
+photosInput.addEventListener('change', (e) => handleFiles(e.target.files));
+addMoreInput.addEventListener('change', (e) => handleFiles(e.target.files));
+addPhotosInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+timingInput.addEventListener('input', () => {
+  timing = parseInt(timingInput.value);
+  document.getElementById('timing-val').textContent = timing + 's';
+});
+
+transitionSelect.addEventListener('change', () => {
+  transition = transitionSelect.value;
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  
+  switch(e.key) {
+    case ' ':
+      e.preventDefault();
+      togglePlay();
+      break;
+    case 'ArrowRight':
+      showImage(currentIndex + 1);
+      break;
+    case 'ArrowLeft':
+      showImage(currentIndex - 1);
+      break;
+    case 'f':
+    case 'F':
+      toggleFullscreen();
+      break;
+    case 's':
+    case 'S':
+      btnShuffle.click();
+      break;
+    case 'p':
+    case 'P':
+      openDisplayWindow();
+      break;
+    case 'Escape':
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      break;
+  }
+});
+
+// Service worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
