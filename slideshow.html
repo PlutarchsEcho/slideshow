@@ -12,11 +12,11 @@
   <h1>Slideshow</h1>
   <p>Drop images or folders here, or click to browse</p>
   <div class="btn-row">
-    <button class="btn btn-primary" id="btn-folder">📁 Folder</button>
-    <button class="btn btn-secondary" id="btn-photos">🖼️ Photos</button>
+    <button class="btn btn-primary" id="btn-folder" onclick="console.log('folder clicked');document.getElementById('folderInput').click();">📁 Folder</button>
+    <button class="btn btn-secondary" id="btn-photos" onclick="console.log('photos clicked');document.getElementById('photosInput').click();">🖼️ Photos</button>
   </div>
-  <input type="file" id="folderInput" webkitdirectory directory multiple>
-  <input type="file" id="photosInput" multiple accept="image/*">
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
+  <input type="file" id="photosInput" multiple accept="image/*" style="display:none">
 </div>
 
 <div id="stage" style="display:none;">
