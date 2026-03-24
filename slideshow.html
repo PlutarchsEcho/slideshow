@@ -369,10 +369,29 @@ const timingInput = document.getElementById('timing-control');
 const transitionSelect = document.getElementById('transition-control');
 
 // Button click handlers → trigger file inputs
-document.getElementById('btn-folder').addEventListener('click', () => folderInput.click());
-document.getElementById('btn-photos').addEventListener('click', () => photosInput.click());
-document.getElementById('btn-add-folder').addEventListener('click', () => addMoreInput.click());
-document.getElementById('btn-add-photos').addEventListener('click', () => addPhotosInput.click());
+function pickFolder() {
+  console.log('pickFolder clicked');
+  const el = folderInput;
+  if (el.showPicker) { el.showPicker(); } else { el.click(); }
+}
+function pickPhotos() {
+  console.log('pickPhotos clicked, input:', photosInput);
+  const el = photosInput;
+  if (el.showPicker) { el.showPicker(); } else { el.click(); }
+}
+function pickAddFolder() {
+  const el = addMoreInput;
+  if (el.showPicker) { el.showPicker(); } else { el.click(); }
+}
+function pickAddPhotos() {
+  const el = addPhotosInput;
+  if (el.showPicker) { el.showPicker(); } else { el.click(); }
+}
+
+document.getElementById('btn-folder').addEventListener('click', pickFolder);
+document.getElementById('btn-photos').addEventListener('click', pickPhotos);
+document.getElementById('btn-add-folder').addEventListener('click', pickAddFolder);
+document.getElementById('btn-add-photos').addEventListener('click', pickAddPhotos);
 
 folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
 photosInput.addEventListener('change', (e) => handleFiles(e.target.files));
