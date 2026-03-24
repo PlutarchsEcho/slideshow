@@ -127,6 +127,17 @@ dropzone.addEventListener('drop', (e) => {
   if (files.length) handleFiles(files);
 });
 
+function togglePlay() {
+  isPlaying = !isPlaying;
+  btnPlay.textContent = isPlaying ? '⏸' : '▶';
+  if (isPlaying) {
+    playInterval = setInterval(() => showImage(currentIndex + 1), timing * 1000);
+  } else {
+    clearInterval(playInterval);
+    playInterval = null;
+  }
+}
+
 function handleFiles(fileList) {
   const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
@@ -140,8 +151,8 @@ function handleFiles(fileList) {
   
   originalOrder = [...images];
   
-  if (images.length === files.length) {
-    // First batch
+  if (images.length > 0 && stage.style.display === 'none') {
+    // First batch — show the stage
     dropzone.style.display = 'none';
     stage.style.display = 'block';
     filmstripWrap.style.display = 'block';
@@ -350,8 +361,8 @@ const folderInput = document.getElementById('folderInput');
 const photosInput = document.getElementById('photosInput');
 const addMoreInput = document.getElementById('addMoreInput');
 const addPhotosInput = document.getElementById('addPhotosInput');
-const timingInput = document.getElementById('timing');
-const transitionSelect = document.getElementById('transition');
+const timingInput = document.getElementById('timing-control');
+const transitionSelect = document.getElementById('transition-control');
 
 folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
 photosInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -360,7 +371,12 @@ addPhotosInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
 timingInput.addEventListener('input', () => {
   timing = parseInt(timingInput.value);
-  document.getElementById('timing-val').textContent = timing + 's';
+  document.getElementById('timing-val-control').textContent = timing + 's';
+  // Restart interval if playing
+  if (isPlaying) {
+    clearInterval(playInterval);
+    playInterval = setInterval(() => showImage(currentIndex + 1), timing * 1000);
+  }
 });
 
 transitionSelect.addEventListener('change', () => {
