@@ -4,37 +4,81 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Slideshow Display</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Slideshow</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
-#slide { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-#slide img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
+html, body { 
+  background: #000; 
+  width: 100vw; 
+  height: 100vh; 
+  overflow: hidden;
+  cursor: none;
+}
+#slide { 
+  position: fixed; 
+  inset: 0; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: #000;
+}
+#slide img { 
+  max-width: 100%; 
+  max-height: 100%; 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+#slide img.visible { opacity: 1; }
 </style>
 </head>
 <body>
-<div id="slide"><img id="img" src="" alt=""></div>
+<div id="slide">
+  <img id="img" src="" alt="">
+</div>
 <script>
-const bc = new BroadcastChannel('slideshow');
+// Auto fullscreen on load
+document.documentElement.requestFullscreen?.().catch(() => {});
+document.addEventListener('click', () => {
+  document.documentElement.requestFullscreen?.().catch(() => {});
+});
+
+// BroadcastChannel for same-device sync
+let bc = null;
+let currentUrl = null;
 const img = document.getElementById('img');
 
-// Auto fullscreen immediately
-document.documentElement.requestFullscreen?.().catch(() => {});
+try {
+  bc = new BroadcastChannel('slideshow');
+  bc.onmessage = ({data}) => {
+    if (data.cmd === 'show' && data.url) {
+      showImage(data.url);
+    }
+  };
+  bc.postMessage({cmd: 'ready'});
+} catch(e) {
+  console.log('Local sync not available');
+}
 
-bc.onmessage = ({data}) => {
-  if (data.cmd === 'show' && data.url) {
-    img.src = data.url;
+function showImage(url) {
+  if (url === currentUrl) return;
+  img.classList.remove('visible');
+  setTimeout(() => {
+    img.src = url;
+    img.onload = () => img.classList.add('visible');
+  }, 500);
+  currentUrl = url;
+}
+
+// Escape to exit
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.exitFullscreen?.();
   }
-  if (data.cmd === 'close') {
-    window.close();
-  }
-};
-
-// Tell controller we're ready
-bc.postMessage({cmd: 'ready'});
-
-// Ping every 3 seconds so controller knows we're alive
-setInterval(() => bc.postMessage({cmd: 'ping'}), 3000);
+});
 </script>
 </body>
 </html>

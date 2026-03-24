@@ -1,0 +1,16 @@
+{
+  "name": "slideshow-relay",
+  "version": "1.0.0",
+  "description": "WebSocket relay for cross-device slideshow sync",
+  "main": "relay-server.js",
+  "scripts": {
+    "start": "node relay-server.js",
+    "dev": "node relay-server.js 8765"
+  },
+  "keywords": ["slideshow", "websocket", "airplay", "presentation"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

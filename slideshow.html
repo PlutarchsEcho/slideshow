@@ -1,4 +1,6 @@
+<style>
 </head>
+<link rel="stylesheet" href="styles.css">
 <body>
 <div id="dropzone">
   <div class="icon">🖼️</div>
@@ -33,6 +35,7 @@
     <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
     <button class="hud-btn" id="btn-airplay" title="AirPlay">📡</button>
     <button class="hud-btn" id="btn-present" title="Open Display (P)">📺</button>
+    <button class="hud-btn hud-btn-kiosk" id="btn-kiosk" title="Kiosk Mode (K)">🖥️ Kiosk</button>
     <button class="hud-btn" id="btn-fullscreen" title="Fullscreen (F)">⛶</button>
   </div>
 </div>
@@ -82,6 +85,7 @@ const progressBar = document.getElementById('progress-bar');
 const imgInfo = document.getElementById('img-info');
 const displayStatus = document.getElementById('display-status');
 const btnPresent = document.getElementById('btn-present');
+const btnKiosk = document.getElementById('btn-kiosk');
 const btnPlay = document.getElementById('btn-play-control');
 const btnShuffle = document.getElementById('btn-shuffle');
 const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -138,6 +142,7 @@ function handleFiles(fileList) {
     filmstripWrap.style.display = 'block';
     topHud.classList.remove('hidden');
     controls.classList.remove('hidden');
+    controls.classList.add('show');
     showImage(0);
   }
   updateFilmstrip();
@@ -149,6 +154,7 @@ function showImage(index) {
   currentIndex = (index + images.length) % images.length;
   mainImg.src = images[currentIndex].url;
   imgInfo.textContent = images[currentIndex].name;
+  imgInfo.classList.add('show');
   updateCounter();
   updateProgress();
   updateFilmstrip();
@@ -187,6 +193,7 @@ function updateDisplayStatus() {
 }
 
 function syncToDisplay() {
+  // Local BroadcastChannel display
   if (channel && displayReady && images.length > 0) {
     channel.postMessage({
       cmd: 'show',
@@ -194,48 +201,39 @@ function syncToDisplay() {
       transition: transition
     });
   }
+  
+  // Remote WebSocket displays
+  if (window.RemoteDisplay && window.RemoteDisplay.isConnected && images.length > 0) {
+    window.RemoteDisplay.sync(images[currentIndex].url, transition);
+  }
 }
 
-function openDisplayWindow() {
-  if (displayWindow && !displayWindow.closed) {
-    displayWindow.focus();
+function openKioskWindow() {
+  // Open clean fullscreen window - no browser chrome at all
+  const w = screen.width || window.innerWidth;
+  const h = screen.height || window.innerHeight;
+  const features = `width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes`;
+  const kioskWindow = window.open("display.html", "kiosk", features);
+  
+  if (!kioskWindow || kioskWindow.closed) {
+    alert("Popup blocked. Please allow popups and try again.");
     return;
   }
   
-  const features = "popup,width=" + screen.width + ",height=" + screen.height + ",menubar=no,toolbar=no,location=no,status=no,scrollbars=no";
-  displayWindow = window.open("display.html", "slideshow-display", features);
-  
-  if (!displayWindow || displayWindow.closed) {
-    alert("Display window blocked by popup blocker.\n\nPlease allow popups for this site and try again.");
-    return;
-  }
-  
-  updateDisplayStatus();
-  
-  // Try to make display go fullscreen
+  // Try to make it fullscreen
   setTimeout(() => {
-    if (displayWindow && displayWindow.document && displayWindow.document.documentElement) {
-      displayWindow.document.documentElement.requestFullscreen?.().catch(() => {});
-    }
-  }, 500);
+    kioskWindow.document.documentElement.requestFullscreen?.().catch(() => {});
+    // Lock cursor to hide it
+    kioskWindow.document.body.style.cursor = 'none';
+  }, 300);
   
-  // Check if window closes
+  // Focus and monitor
+  kioskWindow.focus();
   const checkInterval = setInterval(() => {
-    if (!displayWindow || displayWindow.closed) {
+    if (!kioskWindow || kioskWindow.closed) {
       clearInterval(checkInterval);
-      displayReady = false;
-      updateDisplayStatus();
     }
   }, 1000);
-}
-
-function togglePresentMode() {
-  isPresentMode = !isPresentMode;
-  document.body.classList.toggle('present-mode', isPresentMode);
-  if (isPresentMode) {
-    openDisplayWindow();
-    document.documentElement.requestFullscreen?.().catch(() => {});
-  }
 }
 
 function toggleFullscreen() {
@@ -251,8 +249,76 @@ function tryAirPlay() {
   alert("To AirPlay to TV:\n\n1. Open Control Center\n2. Tap Screen Mirroring\n3. Select your TV\n\nThe clean display will show on your TV.");
 }
 
+function openRemoteDisplay() {
+  // Use RemoteDisplay module if available
+  if (window.RemoteDisplay) {
+    const code = window.RemoteDisplay.connect();
+    showRemotePanel(code);
+  } else {
+    // Fallback: simple alert with instructions
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const url = `${window.location.origin}/display.html?join=${code}`;
+    alert(`📺 Open on TV\n\n1. Open this URL on your TV/browser:\n${url}\n\n2. Or enter code: ${code}\n\n(Remote display module not loaded)`);
+  }
+}
+
+function showRemotePanel(code) {
+  // Create or update remote panel
+  let panel = document.getElementById('remote-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'remote-panel';
+    panel.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: rgba(0,0,0,0.9);
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 20px;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      z-index: 1000;
+      min-width: 220px;
+      text-align: center;
+    `;
+    document.body.appendChild(panel);
+  }
+  
+  const url = `${window.location.origin}/display.html?join=${code}`;
+  
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-weight:600;">📺 Remote Display</span>
+      <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px;">×</button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="color:#888;font-size:12px;margin-bottom:4px;">Session Code</div>
+      <div style="font-size:36px;font-weight:300;letter-spacing:8px;color:#0af;">${code}</div>
+    </div>
+    <div style="margin-bottom:12px;font-size:12px;color:#888;">
+      Open on your TV:<br>
+      <code style="background:#222;padding:4px 8px;border-radius:4px;display:inline-block;margin-top:4px;word-break:break-all;">${url}</code>
+    </div>
+    <div id="remote-display-count" style="color:#4f4;font-size:12px;display:none;"></div>
+  `;
+  
+  panel.style.display = 'block';
+  
+  // Listen for display connections
+  window.addEventListener('remotedisplayjoined', (e) => {
+    const countEl = document.getElementById('remote-display-count');
+    if (countEl) {
+      countEl.style.display = 'block';
+      countEl.textContent = `${e.detail.count} display${e.detail.count !== 1 ? 's' : ''} connected`;
+    }
+  });
+}
+
 // Button event listeners
 btnPresent.addEventListener('click', openDisplayWindow);
+btnKiosk.addEventListener('click', openKioskWindow);
+btnAirplay.addEventListener('click', openRemoteDisplay);  // New: Open on TV via WebSocket
 btnPlay.addEventListener('click', togglePlay);
 btnShuffle.addEventListener('click', () => {
   isShuffled = !isShuffled;
@@ -323,6 +389,10 @@ document.addEventListener('keydown', (e) => {
     case 'P':
       openDisplayWindow();
       break;
+    case 'k':
+    case 'K':
+      openKioskWindow();
+      break;
     case 'Escape':
       if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -336,5 +406,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
+<script src="remote-display.js"></script>
 </body>
 </html>
