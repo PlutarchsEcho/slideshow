@@ -141,29 +141,46 @@ function togglePlay() {
 
 function handleFiles(fileList) {
   const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
-  console.log('handleFiles called with', files.length, 'images');
   if (!files.length) return;
-  
+
+  // Show loading state on the dropzone
+  dropzone.style.pointerEvents = 'none';
+  dropzone.style.opacity = '0.6';
+  const loader = document.createElement('div');
+  loader.id = 'loading-msg';
+  loader.textContent = `Loading ${files.length} photos…`;
+  loader.style.cssText = 'font-size:16px;color:var(--text-dim);margin-top:8px;';
+  dropzone.appendChild(loader);
+
+  const wasEmpty = images.length === 0;
+
+  // Batch-add all new blob URLs first (fast, synchronous)
   files.forEach(file => {
     images.push({
       url: URL.createObjectURL(file),
       name: file.name
     });
   });
-  
+
   originalOrder = [...images];
-  
-  if (images.length > 0 && stage.style.display === 'none') {
-    // First batch — show the stage with forced reflow
+
+  // Remove loading state
+  dropzone.style.pointerEvents = '';
+  dropzone.style.opacity = '';
+  loader.remove();
+
+  if (wasEmpty) {
+    // First batch — show the stage
     dropzone.style.display = 'none';
-    void stage.offsetWidth; // force reflow
     stage.style.display = 'block';
     filmstripWrap.style.display = 'block';
     topHud.classList.remove('hidden');
     controls.classList.remove('hidden');
     controls.classList.add('show');
-    requestAnimationFrame(() => showImage(0));
+    showImage(0);
   }
+
+  // Update DOM once — not per image
   updateFilmstrip();
   updateCounter();
 }
@@ -375,31 +392,16 @@ const addPhotosInput = document.getElementById('addPhotosInput');
 const timingInput = document.getElementById('timing-control');
 const transitionSelect = document.getElementById('transition-control');
 
-// File input processing — synchronous to avoid RAF timing issues
+// File input processing
 function processInputFiles(inputEl) {
   const files = Array.from(inputEl.files).filter(f => f.type.startsWith('image/'));
-  console.log('processInputFiles:', files.length, 'images');
-  if (files.length) handleFiles(files);
-  // Reset so same files can be re-selected
-  requestAnimationFrame(() => { inputEl.value = ''; });
-}
-
-[photosInput, addPhotosInput, folderInput, addMoreInput].forEach(inputEl => {
-  inputEl.addEventListener('change', () => { console.log('change on', inputEl.id); processInputFiles(inputEl); });
-  inputEl.addEventListener('input', () => { console.log('input on', inputEl.id); processInputFiles(inputEl); });
-});
-
-// File input handlers — change + input events (iOS)
-function processInputFiles(inputEl) {
-  const files = Array.from(inputEl.files).filter(f => f.type.startsWith('image/'));
-  console.log('processInputFiles:', files.length, 'images');
   if (files.length) handleFiles(files);
   requestAnimationFrame(() => { inputEl.value = ''; });
 }
 
 [photosInput, addPhotosInput, folderInput, addMoreInput].forEach(inputEl => {
-  inputEl.addEventListener('change', () => { console.log('change on', inputEl.id); processInputFiles(inputEl); });
-  inputEl.addEventListener('input', () => { console.log('input on', inputEl.id); processInputFiles(inputEl); });
+  inputEl.addEventListener('change', () => processInputFiles(inputEl));
+  inputEl.addEventListener('input', () => processInputFiles(inputEl));
 });
 
 timingInput.addEventListener('input', () => {
