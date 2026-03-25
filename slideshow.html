@@ -34,10 +34,6 @@
     <span class="btn btn-secondary" id="btn-add-folder">+ Add Folder</span>
     <span class="btn btn-secondary" id="btn-add-photos">+ Add Photos</span>
   </div>
-  <input type="file" id="photosInput" multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
-  <input type="file" id="folderInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
-  <input type="file" id="addMoreInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
-  <input type="file" id="addPhotosInput" multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
   <div id="top-right">
     <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
     <button class="hud-btn" id="btn-airplay" title="AirPlay">📡</button>
@@ -491,5 +487,10 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="remote-display.js"></script>
+
+  <input type="file" id="photosInput" multiple accept="image/*" style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="addMoreInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="addPhotosInput" multiple accept="image/*" style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
 </body>
 </html>
