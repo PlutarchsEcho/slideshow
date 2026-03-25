@@ -153,36 +153,45 @@ function handleFiles(fileList) {
   dropzone.appendChild(loader);
 
   const wasEmpty = images.length === 0;
+  let done = 0;
 
-  // Batch-add all new blob URLs first (fast, synchronous)
+  // Read files via FileReader (reliable on iOS Safari — no blob URL issues)
   files.forEach(file => {
-    images.push({
-      url: URL.createObjectURL(file),
-      name: file.name
-    });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      images.push({ url: e.target.result, name: file.name });
+      done++;
+      loader.textContent = `Loading ${done} / ${files.length}…`;
+      if (done === files.length) {
+        originalOrder = [...images];
+        dropzone.style.pointerEvents = '';
+        dropzone.style.opacity = '';
+        loader.remove();
+        if (wasEmpty) {
+          dropzone.style.display = 'none';
+          stage.style.display = 'block';
+          filmstripWrap.style.display = 'block';
+          topHud.classList.remove('hidden');
+          controls.classList.remove('hidden');
+          controls.classList.add('show');
+          showImage(0);
+        }
+        updateFilmstrip();
+        updateCounter();
+      }
+    };
+    reader.onerror = () => {
+      done++;
+      if (done === files.length) {
+        dropzone.style.pointerEvents = '';
+        dropzone.style.opacity = '';
+        loader.remove();
+        updateFilmstrip();
+        updateCounter();
+      }
+    };
+    reader.readAsDataURL(file);
   });
-
-  originalOrder = [...images];
-
-  // Remove loading state
-  dropzone.style.pointerEvents = '';
-  dropzone.style.opacity = '';
-  loader.remove();
-
-  if (wasEmpty) {
-    // First batch — show the stage
-    dropzone.style.display = 'none';
-    stage.style.display = 'block';
-    filmstripWrap.style.display = 'block';
-    topHud.classList.remove('hidden');
-    controls.classList.remove('hidden');
-    controls.classList.add('show');
-    showImage(0);
-  }
-
-  // Update DOM once — not per image
-  updateFilmstrip();
-  updateCounter();
 }
 
 function showImage(index) {
