@@ -140,17 +140,20 @@ input[type="file"] { display: none; }
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 12px;
+  padding-top: env(safe-area-inset-top, 0);
+  gap: 6px;
   z-index: 100;
+  overflow: visible;
 }
 #counter {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
-  min-width: 60px;
+  min-width: 52px;
+  flex-shrink: 0;
 }
-#add-more-wrap { display: flex; gap: 8px; flex: 1; }
+#add-more-wrap { display: flex; gap: 6px; flex-shrink: 0; }
 #add-more-wrap button {
   background: transparent;
   border: 1px solid var(--border);
@@ -160,25 +163,35 @@ input[type="file"] { display: none; }
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 #add-more-wrap button:hover { border-color: var(--text-dim); color: var(--text); }
-#top-right { display: flex; gap: 6px; margin-left: auto; }
+#top-right { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
 .hud-btn {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 7px 12px;
+  padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   transition: all 0.15s;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.hud-btn:hover { background: var(--surface2); border-color: var(--text-dim); transform: translateY(-1px); }
+.hud-btn:hover { background: var(--surface2); border-color: var(--text-dim); }
 .hud-btn-kiosk { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
 .hud-btn-kiosk:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* === MOBILE (< 480px) === */
+@media (max-width: 480px) {
+  #add-more-wrap { display: none; }
+  #top-hud { gap: 4px; padding: 0 8px; }
+  .hud-btn { padding: 6px 6px; font-size: 13px; }
+}
 
 /* === FILMSTRIP === */
 #filmstrip-wrap {
