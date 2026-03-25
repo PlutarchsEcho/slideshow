@@ -175,46 +175,18 @@ function handleFiles(fileList) {
     }
   }
 
-  files.forEach(file => {
-    let url;
-    try {
-      url = URL.createObjectURL(file);
-    } catch(e) {
-      url = null;
-    }
-
-    if (url) {
-      // Test if the URL actually loads — pre-load into an Image
-      const img = new Image();
-      img.onload = () => {
-        images.push({ url, name: file.name });
-        done++;
-        finish();
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        // Fall back to FileReader for problematic files (HEIC, etc.)
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          images.push({ url: e.target.result, name: file.name });
-          done++;
-          finish();
-        };
-        reader.onerror = () => { done++; finish(); };
-        reader.readAsDataURL(file);
-      };
-      img.src = url;
-    } else {
-      // createObjectURL failed — use FileReader directly
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        images.push({ url: e.target.result, name: file.name });
-        done++;
-        finish();
-      };
-      reader.onerror = () => { done++; finish(); };
-      reader.readAsDataURL(file);
-    }
+  files.forEach((file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      images.push({ url: e.target.result, name: file.name });
+      done++;
+      finish();
+    };
+    reader.onerror = () => {
+      done++;
+      finish();
+    };
+    reader.readAsDataURL(file);
   });
 }
 
