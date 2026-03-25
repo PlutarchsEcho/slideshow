@@ -12,14 +12,8 @@
   <h1>Slideshow</h1>
   <p>Drop images or folders here, or click to browse</p>
   <div class="btn-row" id="btn-row">
-    <label class="btn btn-secondary" id="label-photos">
-      <input type="file" id="photosInput" multiple style="opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;cursor:pointer;z-index:1;">
-      🖼️ Photos
-    </label>
-    <label class="btn btn-primary" id="label-folder">
-      <input type="file" id="folderInput" webkitdirectory directory multiple style="opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;cursor:pointer;z-index:1;">
-      📁 Folder
-    </label>
+    <span class="btn btn-secondary" id="btn-photos-pick">🖼️ Photos</span>
+    <span class="btn btn-primary" id="btn-folder-pick">📁 Folder</span>
   </div>
 </div>
 
@@ -37,9 +31,13 @@
 <div id="top-hud" class="hidden" style="padding-top: env(safe-area-inset-top, 0);">
   <div id="counter">0 / 0</div>
   <div id="add-more-wrap">
-    <label class="btn btn-secondary">+ Add Folder<input type="file" id="addMoreInput" webkitdirectory directory multiple style="opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;cursor:pointer;z-index:1;"></label>
-    <label class="btn btn-secondary">+ Add Photos<input type="file" id="addPhotosInput" multiple style="opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;cursor:pointer;z-index:1;"></label>
+    <span class="btn btn-secondary" id="btn-add-folder">+ Add Folder</span>
+    <span class="btn btn-secondary" id="btn-add-photos">+ Add Photos</span>
   </div>
+  <input type="file" id="photosInput" multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="addMoreInput" webkitdirectory directory multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
+  <input type="file" id="addPhotosInput" multiple style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;">
   <div id="top-right">
     <button class="hud-btn" id="btn-shuffle" title="Shuffle (S)">🔀</button>
     <button class="hud-btn" id="btn-airplay" title="AirPlay">📡</button>
@@ -178,11 +176,18 @@ function handleFiles(fileList) {
   files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      if (!e.target.result || e.target.result.length < 100) {
+        console.warn('FileReader returned empty/too-small result for', file.name, 'result length:', e.target.result?.length);
+        done++;
+        finish();
+        return;
+      }
       images.push({ url: e.target.result, name: file.name });
       done++;
       finish();
     };
-    reader.onerror = () => {
+    reader.onerror = (e) => {
+      console.error('FileReader error for', file.name, e);
       done++;
       finish();
     };
@@ -407,6 +412,24 @@ function processInputFiles(inputEl) {
 [photosInput, addPhotosInput, folderInput, addMoreInput].forEach(inputEl => {
   inputEl.addEventListener('change', () => processInputFiles(inputEl));
   inputEl.addEventListener('input', () => processInputFiles(inputEl));
+});
+
+// Span button click handlers — open file pickers directly
+document.getElementById('btn-photos-pick')?.addEventListener('click', () => {
+  photosInput.value = '';
+  photosInput.click();
+});
+document.getElementById('btn-folder-pick')?.addEventListener('click', () => {
+  folderInput.value = '';
+  folderInput.click();
+});
+document.getElementById('btn-add-folder')?.addEventListener('click', () => {
+  addMoreInput.value = '';
+  addMoreInput.click();
+});
+document.getElementById('btn-add-photos')?.addEventListener('click', () => {
+  addPhotosInput.value = '';
+  addPhotosInput.click();
 });
 
 timingInput.addEventListener('input', () => {
